@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#3B82F6" />
+    <meta name="description" content="Platform layanan digital terpercaya untuk kebutuhan WiFi, CCTV, programming, editing, dan VPS hosting Anda" />
+    <meta name="keywords" content="layanan digital, wifi installation, cctv, code repair, photo editing, video editing, vps hosting" />
+    <meta name="author" content="Layanan Digital" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Critical Resource Hints -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://app.pakasir.com" />
+    <link rel="preconnect" href="https://firebase.googleapis.com" />
+    <link rel="dns-prefetch" href="https://app.pakasir.com" />
+    <link rel="dns-prefetch" href="https://firebase.googleapis.com" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="96x96" href="/icons/icon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="384x384" href="/icons/icon-384x384.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
+    
+    <!-- Apple Mobile Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="LayananDigital" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#3B82F6" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Layanan Digital - Solusi Digital Profesional" />
+    <meta property="og:description" content="Platform layanan digital terpercaya untuk kebutuhan WiFi, CCTV, programming, editing, dan VPS hosting Anda" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:url" content="https://layanandigital.id" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Layanan Digital - Solusi Digital Profesional" />
+    <meta name="twitter:description" content="Platform layanan digital terpercaya untuk kebutuhan WiFi, CCTV, programming, editing, dan VPS hosting Anda" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/icons/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-72x72.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
+    <link rel="mask-icon" href="/favicon.svg" color="#3B82F6" />
+    
+    <!-- Critical CSS Inline -->
+    <style>
+      /* Critical CSS for fast first paint */
+      *,*::before,*::after{box-sizing:border-box}
+      html{-moz-tab-size:4;-o-tab-size:4;tab-size:4;line-height:1.15;-webkit-text-size-adjust:100%}
+      body{margin:0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif}
+      #root{min-height:100vh}
+      
+      /* iOS PWA Splash Screen Background */
+      @media (prefers-color-scheme: light) {
+        html { background-color: #ffffff; }
+      }
+      @media (prefers-color-scheme: dark) {
+        html { background-color: #111827; }
+      }
+      
+      /* Prevent FOUC */
+      .no-fouc { visibility: hidden; }
+      
+      /* Loading spinner */
+      .initial-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        z-index: 9999;
+      }
+      @media (prefers-color-scheme: dark) {
+        .initial-loader { background: #111827; }
+      }
+      .initial-loader__spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e5e7eb;
+        border-top-color: #3B82F6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <title>Layanan Digital - Solusi Digital Profesional</title>
+    
+    <!-- Preload Critical Assets -->
+    <link rel="preload" href="data:application/octet-stream;base64,aW1wb3J0IHsgU3RyaWN0TW9kZSwgU3VzcGVuc2UsIGxhenkgfSBmcm9tICdyZWFjdCc7CmltcG9ydCB7IGNyZWF0ZVJvb3QgfSBmcm9tICdyZWFjdC1kb20vY2xpZW50JzsKaW1wb3J0IHsgQnJvd3NlclJvdXRlciwgUm91dGVzLCBSb3V0ZSB9IGZyb20gJ3JlYWN0LXJvdXRlci1kb20nOwppbXBvcnQgeyBFcnJvckJvdW5kYXJ5IH0gZnJvbSAnQC9jb21wb25lbnRzL0Vycm9yQm91bmRhcnknOwppbXBvcnQgeyBTa2VsZXRvbiB9IGZyb20gJ0AvY29tcG9uZW50cy9Ta2VsZXRvbkxvYWRlcic7CmltcG9ydCB7IGluaXRVbHRyYUVycm9yVHJhY2tlciB9IGZyb20gJ0AvbGliL2Vycm9yLXRyYWNrZXInOwppbXBvcnQgJy4vaW5kZXguY3NzJzsKCi8vIEluaXNpYWxpc2FzaSBVTFRSQSBlcnJvciB0cmFja2luZwppbml0VWx0cmFFcnJvclRyYWNrZXIoKTsKCi8vIExhenkgbG9hZCBhcHBzIGZvciBiZXR0ZXIgaW5pdGlhbCBsb2FkIHBlcmZvcm1hbmNlCmNvbnN0IEFwcCA9IGxhenkoKCkgPT4gaW1wb3J0KCcuL0FwcCcpKTsKY29uc3QgQWRtaW5BcHAgPSBsYXp5KCgpID0+IGltcG9ydCgnLi9BZG1pbkFwcCcpKTsKY29uc3QgTm90Rm91bmQgPSBsYXp5KCgpID0+IGltcG9ydCgnLi9wYWdlcy9Ob3RGb3VuZCcpKTsKCi8vIExvYWRpbmcgZmFsbGJhY2sgY29tcG9uZW50CmZ1bmN0aW9uIFBhZ2VMb2FkZXIoKSB7CiAgcmV0dXJuICgKICAgIDxkaXYgY2xhc3NOYW1lPSJtaW4taC1zY3JlZW4gZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgYmctZ3JheS01MCBkYXJrOmJnLWdyYXktOTAwIj4KICAgICAgPGRpdiBjbGFzc05hbWU9InRleHQtY2VudGVyIj4KICAgICAgICA8U2tlbGV0b24gY2xhc3NOYW1lPSJ3LTE2IGgtMTYgbXgtYXV0byBtYi00IHJvdW5kZWQtZnVsbCIgLz4KICAgICAgICA8cCBjbGFzc05hbWU9InRleHQtZ3JheS01MDAgZGFyazp0ZXh0LWdyYXktNDAwIGFuaW1hdGUtcHVsc2UiPk1lbXVhdC4uLjwvcD4KICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KICApOwp9CgpjcmVhdGVSb290KGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKCdyb290JykhKS5yZW5kZXIoCiAgPFN0cmljdE1vZGU+CiAgICA8RXJyb3JCb3VuZGFyeT4KICAgICAgPEJyb3dzZXJSb3V0ZXI+CiAgICAgICAgPFN1c3BlbnNlIGZhbGxiYWNrPXs8UGFnZUxvYWRlciAvPn0+CiAgICAgICAgICA8Um91dGVzPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iL2FkbWluLyoiIGVsZW1lbnQ9ezxBZG1pbkFwcCAvPn0gLz4KICAgICAgICAgICAgPFJvdXRlIHBhdGg9Ii8qIiBlbGVtZW50PXs8QXBwIC8+fSAvPgogICAgICAgICAgICA8Um91dGUgcGF0aD0iKiIgZWxlbWVudD17PE5vdEZvdW5kIC8+fSAvPgogICAgICAgICAgPC9Sb3V0ZXM+CiAgICAgICAgPC9TdXNwZW5zZT4KICAgICAgPC9Ccm93c2VyUm91dGVyPgogICAgPC9FcnJvckJvdW5kYXJ5PgogIDwvU3RyaWN0TW9kZT4KKTsK" as="script" crossorigin />
+    <script type="module" crossorigin src="/assets/index-CL1up3YA.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-core-uW5GauGR.js">
+    <link rel="modulepreload" crossorigin href="/assets/ui-vendor-q7wFqjOa.js">
+    <link rel="modulepreload" crossorigin href="/assets/utils-CUtzRjuR.js">
+    <link rel="modulepreload" crossorigin href="/assets/icons-Bd72YT1L.js">
+    <link rel="stylesheet" crossorigin href="/assets/css/index-B6JKAkts.css">
+  </head>
+  <body>
+    <!-- Initial Loader -->
+    <div id="initial-loader" class="initial-loader">
+      <div class="initial-loader__spinner"></div>
+    </div>
+    
+    <div id="root"></div>
+    
+    <!-- Remove loader when app is ready -->
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          var loader = document.getElementById('initial-loader');
+          if (loader) {
+            loader.style.opacity = '0';
+            loader.style.transition = 'opacity 0.3s ease';
+            setTimeout(function() {
+              loader.style.display = 'none';
+            }, 300);
+          }
+        }, 100);
+      });
+    </script>
+    
+    <!-- Noscript content for users without JavaScript -->
+    <noscript>
+      <div style="padding: 20px; text-align: center; font-family: system-ui, sans-serif;">
+        <h1 style="color: #3B82F6;">Layanan Digital</h1>
+        <p>Mohon aktifkan JavaScript untuk menggunakan aplikasi ini.</p>
+      </div>
+    </noscript>
+  </body>
+</html>

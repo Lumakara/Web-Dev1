@@ -1,0 +1,61 @@
+{
+  "admins": [
+    {
+      "id": "1",
+      "email": "admin@lumakara.com",
+      "password": "admin123",
+      "name": "Super Admin",
+      "role": "super_admin",
+      "permissions": ["all"],
+      "avatar": "",
+      "isActive": true,
+      "createdAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "2",
+      "email": "manager@lumakara.com",
+      "password": "manager123",
+      "name": "Manager",
+      "role": "admin",
+      "permissions": [
+        "dashboard:view",
+        "products:view",
+        "products:create",
+        "products:edit",
+        "products:delete",
+        "orders:view",
+        "orders:edit",
+        "tickets:view",
+        "tickets:edit",
+        "analytics:view",
+        "settings:view"
+      ],
+      "avatar": "",
+      "isActive": true,
+      "createdAt": "2024-01-15T00:00:00.000Z"
+    },
+    {
+      "id": "3",
+      "email": "moderator@lumakara.com",
+      "password": "mod123",
+      "name": "Moderator",
+      "role": "moderator",
+      "permissions": [
+        "dashboard:view",
+        "products:view",
+        "orders:view",
+        "orders:edit",
+        "tickets:view",
+        "tickets:edit"
+      ],
+      "avatar": "",
+      "isActive": true,
+      "createdAt": "2024-02-01T00:00:00.000Z"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "lastUpdated": "2024-02-03T00:00:00.000Z",
+    "totalAdmins": 3
+  }
+}

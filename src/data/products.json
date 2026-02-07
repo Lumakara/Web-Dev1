@@ -1,0 +1,244 @@
+{
+  "products": [
+    {
+      "id": "wifi",
+      "title": "ION Network WiFi - Internet Broadband",
+      "category": "installation",
+      "base_price": 194089,
+      "discount_price": 169900,
+      "stock": 100,
+      "image": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=400",
+      "icon": "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=200",
+      "rating": 4.9,
+      "reviews": 312,
+      "duration": "1-3 hari",
+      "description": "Internet Broadband ION Network dengan jangkauan luas, free kabel 200 meter, dan customer service 24/6. Harga stabil/flat, free biaya instalasi, dan bebas denda keterlambatan.",
+      "tags": ["wifi", "internet", "broadband", "unlimited"],
+      "tiers": [
+        { 
+          "name": "FLASH 60 Mbps", 
+          "price": 235997, 
+          "features": [
+            "Up to 60 Mbps speed",
+            "Ideal untuk 6 perangkat",
+            "Free kabel 200 meter",
+            "24/6 Customer Service 088992222666",
+            "Harga stabil/flat setiap bulan",
+            "Free biaya instalasi",
+            "Bebas denda keterlambatan",
+            "Free pemutihan tagihan 6 bulan sekali",
+            "Bebas deposit",
+            "Bebas biaya sewa alat (dipinjamkan)"
+          ] 
+        },
+        { 
+          "name": "LIGHT 100 Mbps", 
+          "price": 285630, 
+          "features": [
+            "Up to 100 Mbps speed",
+            "Ideal untuk 8-10 perangkat",
+            "Free kabel 200 meter",
+            "24/6 Customer Service 088992222666",
+            "Harga stabil/flat setiap bulan",
+            "Free biaya instalasi",
+            "Bebas denda keterlambatan",
+            "Free pemutihan tagihan 6 bulan sekali",
+            "Bebas deposit",
+            "Bebas biaya sewa alat (dipinjamkan)"
+          ] 
+        },
+        { 
+          "name": "AMAZING 150 Mbps", 
+          "price": 358651, 
+          "features": [
+            "Up to 150 Mbps speed",
+            "Ideal untuk 15 perangkat",
+            "Free kabel 200 meter",
+            "24/6 Customer Service 088992222666",
+            "Harga stabil/flat setiap bulan",
+            "Free biaya instalasi",
+            "Bebas denda keterlambatan",
+            "Free pemutihan tagihan 6 bulan sekali",
+            "Bebas deposit",
+            "Bebas biaya sewa alat (dipinjamkan)"
+          ] 
+        },
+        { 
+          "name": "BLITZ 300 Mbps", 
+          "price": 526816, 
+          "features": [
+            "Up to 300 Mbps speed",
+            "Ideal untuk 20-25 perangkat",
+            "Free kabel 200 meter",
+            "24/6 Customer Service 088992222666",
+            "Harga stabil/flat setiap bulan",
+            "Free biaya instalasi",
+            "Bebas denda keterlambatan",
+            "Free pemutihan tagihan 6 bulan sekali",
+            "Bebas deposit",
+            "Bebas biaya sewa alat (dipinjamkan)"
+          ] 
+        },
+        { 
+          "name": "UNIVERSE 500 Mbps", 
+          "price": 650770, 
+          "features": [
+            "Up to 500 Mbps speed",
+            "High performance streaming",
+            "Free kabel 200 meter",
+            "24/6 Customer Service 088992222666",
+            "Harga stabil/flat setiap bulan",
+            "Free biaya instalasi",
+            "Bebas denda keterlambatan",
+            "Free pemutihan tagihan 6 bulan sekali",
+            "Bebas deposit",
+            "Bebas biaya sewa alat (dipinjamkan)"
+          ] 
+        },
+        { 
+          "name": "INFINITE 1 Gbps", 
+          "price": 1120999, 
+          "features": [
+            "1 Gbps ultra speed",
+            "Unlimited devices",
+            "Free kabel 200 meter",
+            "24/6 Customer Service 088992222666",
+            "Harga stabil/flat setiap bulan",
+            "Free biaya instalasi",
+            "Bebas denda keterlambatan",
+            "Free pemutihan tagihan 6 bulan sekali",
+            "Bebas deposit",
+            "Bebas biaya sewa alat (dipinjamkan)"
+          ] 
+        }
+      ],
+      "related": ["cctv", "vps"],
+      "terms": {
+        "general": [
+          "Harga sudah termasuk PPN (11%)",
+          "Harga flat setiap bulannya (tidak ada kenaikan harga)",
+          "Free kabel s/d 200 meter, lebih dari 200 Meter ada penambahan biaya Rp 2.000/meter",
+          "Free biaya instalasi",
+          "Perangkat WiFi dipinjamkan selama berlangganan ION Network",
+          "Bayar setelah internet aktif terpasang",
+          "Estimasi pemasangan 1-3 hari setelah verifikasi",
+          "Minimal berlangganan 12 bulan"
+        ],
+        "penalty": [
+          "Denda pemutusan berlangganan dibawah 12 bulan: Rp 500.000"
+        ],
+        "payment_info": [
+          "TIDAK melakukan pembayaran melalui SALES maupun TEKNISI",
+          "Jangan menyerahkan perangkat modem tanpa ID Card dan Surat Resmi",
+          "Pembayaran pertama setelah internet aktif dipasang",
+          "Pembayaran melalui Aplikasi Member Area atau Virtual Account"
+        ]
+      }
+    },
+    {
+      "id": "cctv",
+      "title": "CCTV Security System",
+      "category": "installation",
+      "base_price": 199000,
+      "discount_price": 179000,
+      "stock": 50,
+      "image": "https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?w=400",
+      "icon": "https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?w=200",
+      "rating": 4.7,
+      "reviews": 89,
+      "duration": "4-6 jam",
+      "description": "Instalasi kamera keamanan lengkap dengan monitoring dan akses mobile.",
+      "tags": ["security", "camera", "monitoring"],
+      "tiers": [
+        { "name": "Basic", "price": 199000, "features": ["2 kamera HD", "Recording dasar", "Akses mobile app", "Storage 1 TB"] },
+        { "name": "Standard", "price": 399000, "features": ["4 kamera 4K", "Night vision", "Motion detection", "Cloud backup", "Storage 2 TB"] },
+        { "name": "Premium", "price": 699000, "features": ["8 kamera 4K", "AI detection", "24/7 monitoring", "Professional monitoring", "Storage 4 TB"] }
+      ],
+      "related": ["wifi", "vps"]
+    },
+    {
+      "id": "code",
+      "title": "Code Error Repair",
+      "category": "technical",
+      "base_price": 59000,
+      "discount_price": 49000,
+      "stock": 200,
+      "image": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400",
+      "icon": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=200",
+      "rating": 4.9,
+      "reviews": 234,
+      "duration": "1-4 jam",
+      "description": "Debugging dan optimasi kode expert untuk website dan aplikasi.",
+      "tags": ["debugging", "coding", "development"],
+      "tiers": [
+        { "name": "Basic", "price": 59000, "features": ["Identifikasi bug", "Fix sederhana", "Code review", "Dokumentasi"] },
+        { "name": "Standard", "price": 129000, "features": ["Complex debugging", "Performance optimization", "Security audit", "Testing"] },
+        { "name": "Premium", "price": 249000, "features": ["Full code refactoring", "Architecture review", "Performance tuning", "Long-term support"] }
+      ],
+      "related": ["vps", "wifi"]
+    },
+    {
+      "id": "photo",
+      "title": "Photo Editing",
+      "category": "creative",
+      "base_price": 29000,
+      "discount_price": 25000,
+      "stock": 150,
+      "image": "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=400",
+      "icon": "https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=200",
+      "rating": 4.6,
+      "reviews": 120,
+      "duration": "1-2 hari",
+      "description": "Retouching dan enhancement gambar profesional.",
+      "tags": ["photo", "editing", "creative"],
+      "tiers": [
+        { "name": "Basic", "price": 29000, "features": ["Color correction", "Basic retouching", "Format conversion", "5 revisi"] },
+        { "name": "Standard", "price": 79000, "features": ["Advanced retouching", "Background removal", "Skin smoothing", "Unlimited revisi"] },
+        { "name": "Premium", "price": 149000, "features": ["High-end editing", "Composite work", "RAW processing", "Priority delivery"] }
+      ],
+      "related": ["video", "code"]
+    },
+    {
+      "id": "video",
+      "title": "Video Editing",
+      "category": "creative",
+      "base_price": 79000,
+      "discount_price": 69000,
+      "stock": 80,
+      "image": "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=400",
+      "icon": "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=200",
+      "rating": 4.8,
+      "reviews": 95,
+      "duration": "2-5 hari",
+      "description": "Editing video dan post-production profesional.",
+      "tags": ["video", "editing", "production"],
+      "tiers": [
+        { "name": "Basic", "price": 79000, "features": ["Basic cuts", "Transitions", "Audio sync", "Output 1080p"] },
+        { "name": "Standard", "price": 199000, "features": ["Color grading", "Motion graphics", "Sound mixing", "Output 4K"] },
+        { "name": "Premium", "price": 399000, "features": ["VFX", "Animation", "Professional sound design", "Cinema quality"] }
+      ],
+      "related": ["photo", "code"]
+    },
+    {
+      "id": "vps",
+      "title": "VPS Hosting",
+      "category": "technical",
+      "base_price": 49000,
+      "discount_price": 39000,
+      "stock": 500,
+      "image": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=400",
+      "icon": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=200",
+      "rating": 4.5,
+      "reviews": 180,
+      "duration": "Instant",
+      "description": "Solusi hosting Virtual Private Server.",
+      "tags": ["hosting", "server", "infrastructure"],
+      "tiers": [
+        { "name": "Basic", "price": 49000, "features": ["2 CPU cores", "4GB RAM", "50GB SSD", "1TB bandwidth"] },
+        { "name": "Standard", "price": 99000, "features": ["4 CPU cores", "8GB RAM", "100GB SSD", "2TB bandwidth"] },
+        { "name": "Premium", "price": 199000, "features": ["8 CPU cores", "16GB RAM", "200GB SSD", "Unlimited bandwidth"] }
+      ],
+      "related": ["wifi", "code"]
+    }
+  ]
+}
