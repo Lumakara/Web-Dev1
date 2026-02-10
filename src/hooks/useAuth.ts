@@ -3,7 +3,7 @@
  * Automatically switches between providers based on availability
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { FirebaseAuth } from '@/lib/firebase';
 import { 
   SupabaseAuth,
@@ -193,13 +193,13 @@ export const useAuth = () => {
           // Check existing session first
           const currentUser = await SupabaseAuth.getCurrentUser();
           if (currentUser) {
-            handleUserLogin(currentUser);
+            handleUserLoginRef.current(currentUser);
           }
 
           // Listen for changes
           const { data: { subscription } } = SupabaseAuth.onAuthStateChanged((user) => {
             if (user) {
-              handleUserLogin(user);
+              handleUserLoginRef.current(user);
             } else {
               setUser(null);
               setProfile(null);
@@ -222,7 +222,7 @@ export const useAuth = () => {
               createdAt: currentUser.metadata?.creationTime,
               lastLoginAt: currentUser.metadata?.lastSignInTime,
             };
-            handleUserLogin(authUser);
+            handleUserLoginRef.current(authUser);
           }
 
           // Listen for changes
@@ -238,7 +238,7 @@ export const useAuth = () => {
                 createdAt: firebaseUser.metadata?.creationTime,
                 lastLoginAt: firebaseUser.metadata?.lastSignInTime,
               };
-              handleUserLogin(authUser);
+              handleUserLoginRef.current(authUser);
             } else {
               setUser(null);
               setProfile(null);
@@ -262,8 +262,8 @@ export const useAuth = () => {
     };
   }, [authProvider, setUser, setProfile]);
 
-  // Handle user login (common logic)
-  const handleUserLogin = async (authUser: AuthUser) => {
+  // Handle user login (common logic) - defined as ref to avoid stale closure
+  const handleUserLoginRef = useRef(async (authUser: AuthUser) => {
     setUser(authUser);
 
     // Fetch or create profile in Firestore (optional - for extra data)
@@ -284,7 +284,30 @@ export const useAuth = () => {
     } catch (error) {
       console.error('[AUTH] Error fetching/creating profile:', error);
     }
-  };
+  });
+
+  // Keep ref current
+  useEffect(() => {
+    handleUserLoginRef.current = async (authUser: AuthUser) => {
+      setUser(authUser);
+      try {
+        let profile = await UserService.getProfile(authUser.uid);
+        if (!profile) {
+          const newProfile = {
+            id: authUser.uid,
+            email: authUser.email || '',
+            full_name: authUser.displayName || 'User',
+            avatar_url: authUser.photoURL || '',
+          };
+          await UserService.createProfile(newProfile);
+          profile = newProfile;
+        }
+        setProfile(profile);
+      } catch (error) {
+        console.error('[AUTH] Error fetching/creating profile:', error);
+      }
+    };
+  }, [setUser, setProfile]);
 
   // Sign in with Google
   const signInWithGoogle = useCallback(async () => {

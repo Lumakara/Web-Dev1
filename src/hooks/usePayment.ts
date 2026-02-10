@@ -127,14 +127,18 @@ export const usePayment = (options: UsePaymentOptions = {}) => {
     
     updateState({ countdown: duration });
     
+    // Use ref to track remaining time to avoid stale closure
+    let remaining = duration;
+    
     countdownRef.current = setInterval(() => {
-      setState(prev => {
-        if (prev.countdown <= 1) {
-          if (countdownRef.current) clearInterval(countdownRef.current);
-          return { ...prev, countdown: 0, status: 'expired' };
-        }
-        return { ...prev, countdown: prev.countdown - 1 };
-      });
+      remaining -= 1;
+      
+      if (remaining <= 0) {
+        if (countdownRef.current) clearInterval(countdownRef.current);
+        setState(prev => ({ ...prev, countdown: 0, status: 'expired' }));
+      } else {
+        setState(prev => ({ ...prev, countdown: remaining }));
+      }
     }, 1000);
   }, [updateState]);
 
@@ -198,9 +202,9 @@ export const usePayment = (options: UsePaymentOptions = {}) => {
   // ============================================
 
   /**
-   * Create payment using API method
+   * Create payment using API method - QRIS Only
    */
-  const create = useCallback(async (method: PaymentMethod): Promise<PaymentResponse | null> => {
+  const create = useCallback(async (method: PaymentMethod = 'qris'): Promise<PaymentResponse | null> => {
     // Validate Pakasir configuration
     if (!isPakasirConfigured()) {
       const status = getPakasirStatus();
@@ -323,7 +327,7 @@ export const usePayment = (options: UsePaymentOptions = {}) => {
   /**
    * Create payment using redirect method (opens popup)
    */
-  const createWithRedirect = useCallback((method: PaymentMethod, redirectOptions?: PaymentUrlOptions): boolean => {
+  const createWithRedirect = useCallback((method: PaymentMethod = 'qris', redirectOptions?: PaymentUrlOptions): boolean => {
     // Validate Pakasir configuration
     if (!isPakasirConfigured()) {
       const status = getPakasirStatus();
@@ -344,11 +348,8 @@ export const usePayment = (options: UsePaymentOptions = {}) => {
       
       console.log('[PAYMENT] Opening payment window...', { orderId, amount: subtotal });
       
-      const popup = openPaymentWindow(subtotal, orderId, {
-        ...redirectOptions,
-        qrisOnly: method === 'qris',
-        usePayPal: method === 'paypal',
-      });
+      // QRIS only - simplified options
+      const popup = openPaymentWindow(subtotal, orderId, redirectOptions);
       
       if (popup) {
         popupRef.current = popup;
@@ -564,12 +565,12 @@ export const usePayment = (options: UsePaymentOptions = {}) => {
     return calculateCartTotal();
   }, [calculateCartTotal]);
 
-  const getTotalWithFee = useCallback((method: PaymentMethod): number => {
+  const getTotalWithFee = useCallback((method: PaymentMethod = 'qris'): number => {
     const subtotal = calculateCartTotal();
     return calculateTotal(subtotal, method);
   }, [calculateCartTotal]);
 
-  const getFeeBreakdown = useCallback((method: PaymentMethod) => {
+  const getFeeBreakdown = useCallback((method: PaymentMethod = 'qris') => {
     const subtotal = calculateCartTotal();
     return getPaymentFee(method, subtotal);
   }, [calculateCartTotal]);

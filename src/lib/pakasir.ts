@@ -11,18 +11,7 @@ import { toast } from 'sonner';
 // TYPES
 // ============================================
 
-export type PaymentMethod = 
-  | 'qris'
-  | 'cimb_niaga_va'
-  | 'bni_va'
-  | 'sampoerna_va'
-  | 'bnc_va'
-  | 'maybank_va'
-  | 'permata_va'
-  | 'atm_bersama_va'
-  | 'artha_graha_va'
-  | 'bri_va'
-  | 'paypal';
+export type PaymentMethod = 'qris';
 
 export interface PakasirConfig {
   apiKey: string;
@@ -562,14 +551,12 @@ export async function simulatePayment(
 // ============================================
 
 export interface PaymentUrlOptions {
-  qrisOnly?: boolean;
   redirectUrl?: string;
-  usePayPal?: boolean;
   customMessage?: string;
 }
 
 /**
- * Generate Pakasir payment URL for redirect method
+ * Generate Pakasir payment URL for QRIS (only method supported)
  */
 export function generatePaymentUrl(
   amount: number,
@@ -583,13 +570,9 @@ export function generatePaymentUrl(
   }
 
   const baseUrl = config.isSandbox ? 'https://sandbox.pakasir.com' : PAKASIR_BASE_URL;
-  const path = options?.usePayPal ? 'paypal' : 'pay';
   
-  let url = `${baseUrl}/${path}/${config.projectSlug}/${Math.round(amount)}?order_id=${encodeURIComponent(orderId)}`;
-
-  if (options?.qrisOnly) {
-    url += '&qris_only=1';
-  }
+  // QRIS only - always use qris_only=1
+  let url = `${baseUrl}/pay/${config.projectSlug}/${Math.round(amount)}?order_id=${encodeURIComponent(orderId)}&qris_only=1`;
 
   if (options?.redirectUrl) {
     url += `&redirect=${encodeURIComponent(options.redirectUrl)}`;
@@ -599,7 +582,7 @@ export function generatePaymentUrl(
     url += `&message=${encodeURIComponent(options.customMessage)}`;
   }
 
-  console.log('[PAKASIR] Generated payment URL:', url);
+  console.log('[PAKASIR] Generated QRIS payment URL:', url);
   return url;
 }
 
@@ -638,14 +621,6 @@ export function openPaymentWindow(
 
 export const PAYMENT_METHODS: PaymentMethodInfo[] = [
   { value: 'qris', label: 'QRIS (Semua E-Wallet)', fee: 0, type: 'percentage', icon: 'QrCode', category: 'ewallet' },
-  { value: 'bni_va', label: 'BNI Virtual Account', fee: 0, type: 'percentage', icon: 'Building2', category: 'va' },
-  { value: 'bri_va', label: 'BRI Virtual Account', fee: 0, type: 'percentage', icon: 'Building2', category: 'va' },
-  { value: 'permata_va', label: 'Permata Virtual Account', fee: 0, type: 'percentage', icon: 'Building2', category: 'va' },
-  { value: 'cimb_niaga_va', label: 'CIMB Niaga Virtual Account', fee: 0, type: 'percentage', icon: 'Building2', category: 'va' },
-  { value: 'maybank_va', label: 'Maybank Virtual Account', fee: 0, type: 'percentage', icon: 'Building2', category: 'va' },
-  { value: 'bnc_va', label: 'BNC Virtual Account', fee: 0, type: 'percentage', icon: 'Building2', category: 'va' },
-  { value: 'atm_bersama_va', label: 'ATM Bersama', fee: 0, type: 'percentage', icon: 'CreditCard', category: 'va' },
-  { value: 'paypal', label: 'PayPal', fee: 4.4, type: 'percentage', icon: 'Globe', category: 'international' },
 ];
 
 export function getPaymentMethodLabel(method: PaymentMethod): string {
@@ -665,27 +640,15 @@ export interface FeeBreakdown {
   total: number;
 }
 
-export function getPaymentFee(method: PaymentMethod, amount: number): FeeBreakdown {
+export function getPaymentFee(_method: PaymentMethod, amount: number): FeeBreakdown {
   const serviceFeeRate = 0.01;
   const adminFeeRate = 0.012;
   
   const serviceFee = Math.round(amount * serviceFeeRate);
   const adminFee = Math.round(amount * adminFeeRate);
   
-  let paymentFee = 0;
-  
-  if (method === 'paypal') {
-    paymentFee = Math.round(amount * 0.044) + 4500;
-  }
-  
-  const methodInfo = getPaymentMethodInfo(method);
-  if (methodInfo && methodInfo.fee > 0 && method !== 'paypal') {
-    if (methodInfo.type === 'percentage') {
-      paymentFee = Math.round(amount * (methodInfo.fee / 100));
-    } else {
-      paymentFee = methodInfo.fee;
-    }
-  }
+  // QRIS only - no additional payment fee
+  const paymentFee = 0;
   
   return {
     subtotal: amount,
@@ -696,8 +659,8 @@ export function getPaymentFee(method: PaymentMethod, amount: number): FeeBreakdo
   };
 }
 
-export function calculateTotal(amount: number, method: PaymentMethod): number {
-  const fees = getPaymentFee(method, amount);
+export function calculateTotal(amount: number, _method: PaymentMethod): number {
+  const fees = getPaymentFee('qris', amount);
   return fees.total;
 }
 

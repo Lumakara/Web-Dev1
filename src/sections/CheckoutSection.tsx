@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, CreditCard, Clock, Check, RefreshCw, Wifi, 
-  QrCode, Wallet, Building2, ChevronDown, Copy, X, Shield,
-  Server, User, Lock, Zap, Package
+  QrCode, Copy, X, Shield,
+  Server, User, Lock, Zap, Package, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -75,8 +75,7 @@ export function CheckoutSection() {
   // Step management
   const [currentStep, setCurrentStep] = useState<'form' | 'payment' | 'success'>('form');
   
-  // Payment data
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('qris');
+  // Payment data - QRIS only
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -116,8 +115,8 @@ export function CheckoutSection() {
     domain: string;
   } | null>(null);
 
-  const totalAmount = calculateTotal(subtotal, selectedMethod);
-  const feeBreakdown = getPaymentFee(selectedMethod, subtotal);
+  const totalAmount = calculateTotal(subtotal, 'qris');
+  const feeBreakdown = getPaymentFee('qris', subtotal);
 
   // Redirect if no items
   useEffect(() => {
@@ -220,7 +219,7 @@ export function CheckoutSection() {
     try {
       // Create payment with Pakasir
       const response = await create({
-        method: selectedMethod,
+        method: 'qris',
         orderId: newOrderId,
         amount: subtotal,
         customerName: wifiFormData.fullName || user?.displayName || 'Guest',
@@ -252,64 +251,74 @@ export function CheckoutSection() {
         }
       } : {};
 
-      // Save order to Firestore
-      await OrderService.create({
-        user_id: user?.uid || 'guest',
-        items: selectedItems.map(item => ({
-          product_id: item.productId,
-          title: item.title,
-          tier: item.tier,
-          price: item.price,
-          quantity: item.quantity,
-        })),
-        total_amount: subtotal,
-        status: 'pending',
-        payment_method: selectedMethod,
-        payment_reference: newOrderId,
-        ...installationData,
-        ...panelData,
-      });
+      // Save order to Firestore (non-blocking - continue even if fails)
+      try {
+        await OrderService.create({
+          user_id: user?.uid || 'guest',
+          items: selectedItems.map(item => ({
+            product_id: item.productId,
+            title: item.title,
+            tier: item.tier,
+            price: item.price,
+            quantity: item.quantity,
+          })),
+          total_amount: subtotal,
+          status: 'pending',
+          payment_method: 'qris',
+          payment_reference: newOrderId,
+          ...installationData,
+          ...panelData,
+        });
+        console.log('[CHECKOUT] ✅ Order saved to Firestore');
+      } catch (orderError) {
+        console.warn('[CHECKOUT] ⚠️ Failed to save order, but payment is created:', orderError);
+        toast.warning('Pembayaran dibuat, tetapi gagal menyimpan data order. Tim kami akan menghubungi Anda.');
+      }
 
-      // Send Telegram notification
-      await TelegramBot.sendCheckoutNotification({
-        user: {
-          id: user?.uid || 'guest',
-          email: user?.email || 'guest@example.com',
-          name: user?.displayName || 'Guest',
-        },
-        items: selectedItems.map(item => ({
-          id: item.productId || item.id,
-          title: item.title,
-          tier: item.tier,
-          quantity: item.quantity,
-          price: item.price,
-          image: item.image,
-        })),
-        totalAmount: subtotal,
-        subtotal: subtotal,
-        ...(hasWiFiProducts && {
-          installationDetails: {
-            fullName: wifiFormData.fullName,
-            phoneNumber: wifiFormData.phoneNumber,
-            address: wifiFormData.address,
-            installationDate: wifiFormData.installationDate || 'Belum ditentukan',
-            notes: wifiFormData.notes || '-',
-            packageType: wifiFormData.packageType,
-          }
-        }),
-        ...(hasPanelProducts && {
-          panelDetails: {
-            username: panelFormData.username,
-            domain: PANEL_DOMAIN,
-          }
-        }),
-      });
+      // Send Telegram notification (non-blocking)
+      try {
+        await TelegramBot.sendCheckoutNotification({
+          user: {
+            id: user?.uid || 'guest',
+            email: user?.email || 'guest@example.com',
+            name: user?.displayName || 'Guest',
+          },
+          items: selectedItems.map(item => ({
+            id: item.productId || item.id,
+            title: item.title,
+            tier: item.tier,
+            quantity: item.quantity,
+            price: item.price,
+            image: item.image,
+          })),
+          totalAmount: subtotal,
+          subtotal: subtotal,
+          ...(hasWiFiProducts && {
+            installationDetails: {
+              fullName: wifiFormData.fullName,
+              phoneNumber: wifiFormData.phoneNumber,
+              address: wifiFormData.address,
+              installationDate: wifiFormData.installationDate || 'Belum ditentukan',
+              notes: wifiFormData.notes || '-',
+              packageType: wifiFormData.packageType,
+            }
+          }),
+          ...(hasPanelProducts && {
+            panelDetails: {
+              username: panelFormData.username,
+              domain: PANEL_DOMAIN,
+            }
+          }),
+        });
+      } catch (telegramError) {
+        console.warn('[CHECKOUT] ⚠️ Telegram notification failed:', telegramError);
+      }
 
-      const feeBreakdown = getPaymentFee(selectedMethod, subtotal);
+      const feeBreakdown = getPaymentFee('qris', subtotal);
       
       setPaymentData({
         orderId: newOrderId,
-        method: selectedMethod,
+        method: 'qris',
         amount: subtotal,
         serviceFee: feeBreakdown.serviceFee,
         adminFee: feeBreakdown.adminFee,
@@ -350,11 +359,9 @@ export function CheckoutSection() {
     audioService.playSuccess();
   };
 
-  // Get payment method icon
-  const getPaymentIcon = (method: PaymentMethod) => {
-    if (method === 'qris') return <QrCode className="h-5 w-5" />;
-    if (method === 'paypal') return <Wallet className="h-5 w-5" />;
-    return <Building2 className="h-5 w-5" />;
+  // Get payment method icon - QRIS only
+  const getPaymentIcon = (_method: PaymentMethod) => {
+    return <QrCode className="h-5 w-5" />;
   };
 
   // Format expiry time
@@ -691,7 +698,6 @@ export function CheckoutSection() {
 
             <a 
               href={generatePaymentUrl(paymentData.total, paymentData.orderId, { 
-                qrisOnly: paymentData.method === 'qris',
                 redirectUrl: window.location.origin + '/checkout'
               })}
               target="_blank"
@@ -1087,7 +1093,7 @@ export function CheckoutSection() {
           </Card>
         )}
 
-        {/* Payment Method Selection */}
+        {/* Payment Method - QRIS Only */}
         <Card className={cn(
           "mb-4 shadow-lg",
           isDarkMode ? "bg-gray-800 border-gray-700" : ""
@@ -1098,44 +1104,29 @@ export function CheckoutSection() {
               isDarkMode ? "text-white" : ""
             )}>Metode Pembayaran</h2>
             
-            <div className="space-y-2">
-              {PAYMENT_METHODS.map((method) => (
-                <button
-                  key={method.value}
-                  onClick={() => setSelectedMethod(method.value)}
-                  className={cn(
-                    "w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all",
-                    selectedMethod === method.value
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                      : isDarkMode
-                        ? "border-gray-700 hover:border-gray-600"
-                        : "border-gray-200 hover:border-gray-300"
-                  )}
-                >
-                  <div className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center",
-                    selectedMethod === method.value
-                      ? "bg-blue-500 text-white"
-                      : isDarkMode ? "bg-gray-700 text-gray-400" : "bg-gray-100 text-gray-500"
-                  )}>
-                    {method.value === 'qris' && <QrCode className="h-5 w-5" />}
-                    {method.value === 'paypal' && <Wallet className="h-5 w-5" />}
-                    {!['qris', 'paypal'].includes(method.value) && <Building2 className="h-5 w-5" />}
-                  </div>
-                  <div className="flex-1 text-left">
-                    <p className={cn(
-                      "font-medium",
-                      isDarkMode ? "text-white" : ""
-                    )}>{method.label}</p>
-                    <p className="text-xs text-gray-500">
-                      Biaya: {method.fee > 0 ? formatPrice(method.fee) : 'Gratis'}
-                    </p>
-                  </div>
-                  {selectedMethod === method.value && (
-                    <Check className="h-5 w-5 text-blue-500" />
-                  )}
-                </button>
-              ))}
+            {/* QRIS Info */}
+            <div className={cn(
+              "flex items-center gap-3 p-4 rounded-xl border-2 border-blue-500",
+              isDarkMode ? "bg-blue-900/20" : "bg-blue-50"
+            )}>
+              <div className={cn(
+                "w-12 h-12 rounded-lg flex items-center justify-center bg-blue-500 text-white"
+              )}>
+                <QrCode className="h-6 w-6" />
+              </div>
+              <div className="flex-1">
+                <p className={cn(
+                  "font-semibold",
+                  isDarkMode ? "text-white" : ""
+                )}>QRIS (Semua E-Wallet)</p>
+                <p className="text-xs text-gray-500">
+                  DANA, Gojek, OVO, LinkAja, ShopeePay, dll
+                </p>
+                <p className="text-xs text-green-600 font-medium mt-1">
+                  ✓ Tanpa biaya tambahan
+                </p>
+              </div>
+              <Check className="h-5 w-5 text-blue-500" />
             </div>
 
             {/* Total Calculation */}
