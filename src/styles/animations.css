@@ -233,22 +233,10 @@
 /* ============================================
    BORDER GRADIENT ANIMATION
    ============================================ */
-@keyframes border-gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
+/* Royal Blue Border pulse */
 .animate-border-gradient {
-  background: linear-gradient(90deg, #3B82F6, #8B5CF6, #F97316, #3B82F6);
-  background-size: 300% 300%;
-  animation: border-gradient 3s ease infinite;
+  border-color: #112250;
+  transition: border-color 0.3s ease;
 }
 
 /* ============================================

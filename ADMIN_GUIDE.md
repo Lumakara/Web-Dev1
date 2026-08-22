@@ -6,32 +6,42 @@ Admin Dashboard dapat diakses melalui:
 - URL: `https://your-domain.com/admin` atau `http://localhost:5173/admin`
 - Link di Sidebar: Klik menu "Admin Dashboard"
 
-## 🔐 Kredensial Login
+## 🔐 Admin Authentication
 
-### Default Admin Account
-```
-Email: admin@lumakara.com
-Password: admin123
-Role: Super Admin
-```
+Admin accounts are managed via **Supabase Auth** + **profiles table role-based authorization**.
 
-### Additional Admin Accounts (untuk testing)
+### Creating Admin Accounts
 
-#### Manager Account
-```
-Email: manager@lumakara.com
-Password: manager123
-Role: Admin
-Permissions: products, orders, tickets, analytics
-```
+1. **Create user via Supabase Auth Dashboard:**
+   - Navigate to Supabase project → Authentication → Users
+   - Add user (email + password) or invite via email
+   - Copy the created `user_id` (UUID)
 
-#### Moderator Account
-```
-Email: moderator@lumakara.com
-Password: mod123
-Role: Moderator
-Permissions: view only (products:view, orders:view, tickets:view)
-```
+2. **Assign admin role in profiles table:**
+   ```sql
+   UPDATE profiles 
+   SET role = 'super_admin',  -- or 'manager', 'admin', 'moderator'
+       is_active = true
+   WHERE user_id = '<user-uuid-from-step-1>';
+   ```
+
+3. **User can now login** with their email + password via `/admin` route.
+
+### NO Hardcoded Credentials
+
+**IMPORTANT:** This system does NOT use hardcoded admin emails or credentials. All authorization is enforced via:
+- `profiles.role` column (database-level)
+- RLS policies (row-level security)
+- Supabase Auth JWT tokens
+
+### Role Hierarchy
+
+| Role | Access Level | Typical Use |
+|------|--------------|-------------|
+| **super_admin** | Full system access | Owner/CTO |
+| **manager** | Products, orders, analytics | Operations manager |
+| **admin** | Products, orders, tickets | Support team lead |
+| **moderator** | Read-only access | Junior support |
 
 ## 👥 Role-Based Access Control
 
@@ -40,7 +50,8 @@ Permissions: view only (products:view, orders:view, tickets:view)
 | Role | Deskripsi | Permissions |
 |------|-----------|-------------|
 | **Super Admin** | Full access ke semua fitur | `all` |
-| **Admin** | Mengelola konten dan pesanan | `products:*`, `orders:*`, `tickets:*`, `analytics:view` |
+| **Manager** | Mengelola konten, pesanan, analytics | `products:*`, `orders:*`, `tickets:*`, `analytics:view` |
+| **Admin** | Mengelola konten dan pesanan | `products:*`, `orders:*`, `tickets:*` |
 | **Moderator** | View-only access | `products:view`, `orders:view`, `tickets:view` |
 
 ### Permission Structure
@@ -194,9 +205,9 @@ VITE_TELEGRAM_CHAT_ID=your-chat-id
 Buat file `.env` di root project:
 
 ```env
-# Admin Credentials (untuk reference, actual in src/data/admins.json)
-VITE_ADMIN_EMAIL=admin@lumakara.com
-VITE_ADMIN_PASSWORD=admin123
+# Supabase (required)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 
 # reCAPTCHA v3
 VITE_RECAPTCHA_SITE_KEY=your-recaptcha-site-key

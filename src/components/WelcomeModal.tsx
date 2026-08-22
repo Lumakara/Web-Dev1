@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { 
-  Sparkles, 
-  ShoppingCart, 
-  Headphones, 
-  User, 
-  ArrowRight, 
-  X, 
+import {
+  Sparkles,
+  ShoppingCart,
+  Headphones,
+  User,
+  ArrowRight,
+  X,
   Check,
   Zap,
   Shield,
@@ -29,8 +29,6 @@ const welcomeSteps = [
     title: 'Selamat Datang di Layanan Digital!',
     subtitle: 'Solusi Digital Profesional',
     description: 'Temukan berbagai layanan digital profesional untuk kebutuhan Anda. Dari instalasi Wi-Fi, CCTV, editing kreatif, hingga support teknis.',
-    color: 'from-blue-500 via-purple-500 to-pink-500',
-    bgGradient: 'from-blue-50 via-purple-50 to-pink-50',
     features: [
       { icon: Wifi, text: 'Instalasi WiFi Profesional' },
       { icon: Camera, text: 'Sistem CCTV Lengkap' },
@@ -43,8 +41,6 @@ const welcomeSteps = [
     title: 'Belanja Mudah & Cepat',
     subtitle: 'Pengalaman Belanja Terbaik',
     description: 'Pilih layanan yang Anda butuhkan, tambahkan ke keranjang, dan lakukan pembayaran dengan QRIS. Cepat, aman, dan praktis!',
-    color: 'from-green-500 via-emerald-500 to-teal-500',
-    bgGradient: 'from-green-50 via-emerald-50 to-teal-50',
     features: [
       { icon: Check, text: 'Pilih Paket Sesuai Kebutuhan' },
       { icon: CreditCard, text: 'Pembayaran QRIS' },
@@ -57,8 +53,6 @@ const welcomeSteps = [
     title: 'Akses Dimana Saja',
     subtitle: 'Install Aplikasi Kami',
     description: 'Install Progressive Web App (PWA) kami untuk pengalaman terbaik. Akses layanan kami kapan saja, bahkan offline!',
-    color: 'from-orange-500 via-amber-500 to-yellow-500',
-    bgGradient: 'from-orange-50 via-amber-50 to-yellow-50',
     features: [
       { icon: Smartphone, text: 'Install ke Home Screen' },
       { icon: Zap, text: 'Akses Cepat' },
@@ -71,8 +65,6 @@ const welcomeSteps = [
     title: 'Support 24/7',
     subtitle: 'Kami Selalu Siap Membantu',
     description: 'Tim kami siap membantu kapan saja. Gunakan fitur AI Chatbot untuk jawaban instan, atau kirim tiket dukungan untuk bantuan lebih lanjut.',
-    color: 'from-purple-500 via-violet-500 to-indigo-500',
-    bgGradient: 'from-purple-50 via-violet-50 to-indigo-50',
     features: [
       { icon: Zap, text: 'AI Chatbot Pintar' },
       { icon: Headphones, text: 'Support Teknis' },
@@ -83,14 +75,13 @@ const welcomeSteps = [
 ];
 
 export function WelcomeModal() {
-  const { hasSeenWelcome, setHasSeenWelcome, soundEnabled, isDarkMode } = useAppStore();
+  const { hasSeenWelcome, setHasSeenWelcome, soundEnabled } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
 
   useEffect(() => {
-    // Show welcome modal after a short delay if not seen before
     if (!hasSeenWelcome) {
       const timer = setTimeout(() => {
         setIsOpen(true);
@@ -153,20 +144,23 @@ export function WelcomeModal() {
   const progress = ((currentStep + 1) / welcomeSteps.length) * 100;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent 
-        className={`max-w-lg p-0 overflow-hidden border-0 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (!open) {
+          setHasSeenWelcome(true);
+        }
+      }}
+    >
+      <DialogContent
+        className="max-w-lg p-0 overflow-hidden border-border bg-card shadow-soft-lg"
         style={{ borderRadius: '1.5rem' }}
       >
-        {/* Animated Background */}
-        <div 
-          className={`absolute inset-0 bg-gradient-to-br ${currentStepData.bgGradient} opacity-50 dark:opacity-10 transition-all duration-700`}
-        />
-        
-        {/* Progress Bar - Top */}
-        <div className="relative z-10 flex h-1.5 bg-gray-200 dark:bg-gray-800">
-          <div 
-            className={`h-full bg-gradient-to-r ${currentStepData.color} transition-all duration-500 ease-out`}
+        {/* Progress Bar */}
+        <div className="relative z-10 flex h-1.5 bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -174,27 +168,27 @@ export function WelcomeModal() {
         {/* Header with Step Indicator */}
         <div className="relative z-10 flex items-center justify-between px-6 pt-6">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            <span className="text-sm font-semibold text-primary">
               Langkah {currentStep + 1}
             </span>
-            <span className="text-gray-300">/</span>
-            <span className={`text-sm ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            <span className="text-muted-foreground">/</span>
+            <span className="text-sm text-muted-foreground">
               {welcomeSteps.length}
             </span>
           </div>
-          
+
           {/* Step Dots */}
           <div className="flex items-center gap-1.5">
             {welcomeSteps.map((_, index) => (
               <button
                 key={index}
                 onClick={() => goToStep(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  index === currentStep 
-                    ? 'w-6 bg-gradient-to-r ' + currentStepData.color
-                    : index < currentStep 
-                      ? 'bg-green-500'
-                      : isDarkMode ? 'bg-gray-700' : 'bg-gray-300'
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentStep
+                    ? 'w-6 bg-primary'
+                    : index < currentStep
+                      ? 'w-2 bg-accent'
+                      : 'w-2 bg-muted'
                 }`}
               />
             ))}
@@ -202,77 +196,57 @@ export function WelcomeModal() {
 
           <button
             onClick={handleSkip}
-            className={`p-2 rounded-full transition-colors ${
-              isDarkMode 
-                ? 'hover:bg-gray-800 text-gray-400' 
-                : 'hover:bg-gray-100 text-gray-500'
-            }`}
+            className="p-2 rounded-full transition-colors hover:bg-muted text-muted-foreground"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content with Animation */}
-        <div 
+        <div
           className={`relative z-10 px-8 pb-8 transition-all duration-300 ${
-            isAnimating 
-              ? direction === 'next' 
-                ? 'opacity-0 -translate-x-4' 
+            isAnimating
+              ? direction === 'next'
+                ? 'opacity-0 -translate-x-4'
                 : 'opacity-0 translate-x-4'
               : 'opacity-100 translate-x-0'
           }`}
         >
           {/* Animated Icon Container */}
           <div className="flex justify-center mb-6">
-            <div 
-              className={`relative w-28 h-28 rounded-3xl bg-gradient-to-br ${currentStepData.color} p-0.5 shadow-2xl`}
-            >
-              {/* Animated rings */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/20 to-transparent animate-pulse" />
-              
-              {/* Icon */}
-              <div className="relative w-full h-full rounded-3xl bg-gradient-to-br from-white/10 to-black/10 backdrop-blur-sm flex items-center justify-center">
-                <Icon className="h-12 w-12 text-white drop-shadow-lg animate-float" />
+            <div className="relative w-24 h-24 rounded-3xl bg-primary p-0.5 shadow-sm">
+              <div className="relative w-full h-full rounded-3xl bg-primary flex items-center justify-center">
+                <Icon className="h-12 w-12 text-primary-foreground" />
               </div>
-              
-              {/* Glow effect */}
-              <div 
-                className={`absolute -inset-2 bg-gradient-to-r ${currentStepData.color} opacity-20 blur-xl rounded-full animate-pulse`}
-              />
             </div>
           </div>
 
           {/* Title & Subtitle */}
           <DialogHeader className="text-center mb-4">
-            <p className={`text-sm font-semibold uppercase tracking-wider mb-2 bg-gradient-to-r ${currentStepData.color} bg-clip-text text-transparent`}>
+            <p className="text-xs font-bold uppercase tracking-wider mb-1 text-accent">
               {currentStepData.subtitle}
             </p>
-            <DialogTitle className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <DialogTitle className="text-2xl font-bold text-primary">
               {currentStepData.title}
             </DialogTitle>
           </DialogHeader>
 
           {/* Description */}
-          <p className={`text-center mb-6 leading-relaxed ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <p className="text-center mb-6 text-sm leading-relaxed text-secondary">
             {currentStepData.description}
           </p>
 
           {/* Features Grid */}
           <div className="grid grid-cols-2 gap-3 mb-8">
             {currentStepData.features.map((feature, index) => (
-              <div 
+              <div
                 key={index}
-                className={`flex items-center gap-2 p-3 rounded-xl transition-all duration-300 hover:scale-105 ${
-                  isDarkMode 
-                    ? 'bg-gray-800/80 hover:bg-gray-700' 
-                    : 'bg-white/80 hover:bg-white shadow-sm'
-                }`}
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="flex items-center gap-2.5 p-3 rounded-xl bg-background border border-border"
               >
-                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${currentStepData.color} flex items-center justify-center flex-shrink-0`}>
-                  <feature.icon className="h-4 w-4 text-white" />
+                <div className="w-8 h-8 rounded-lg bg-accent text-primary flex items-center justify-center flex-shrink-0 font-bold">
+                  <feature.icon className="h-4 w-4 text-primary" />
                 </div>
-                <span className={`text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <span className="text-xs font-medium text-primary">
                   {feature.text}
                 </span>
               </div>
@@ -284,34 +258,25 @@ export function WelcomeModal() {
             {currentStep > 0 && (
               <Button
                 variant="outline"
-                className={`flex-1 transition-all duration-300 ${
-                  isDarkMode 
-                    ? 'border-gray-700 text-gray-300 hover:bg-gray-800' 
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                className="flex-1 border-border"
                 onClick={handlePrev}
               >
                 Kembali
               </Button>
             )}
             <Button
-              className={`flex-1 bg-gradient-to-r ${currentStepData.color} hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]`}
+              className="flex-1 bg-primary hover:bg-secondary text-primary-foreground font-semibold shadow-sm"
               onClick={handleNext}
             >
               {currentStep === welcomeSteps.length - 1 ? 'Mulai Sekarang' : 'Lanjut'}
-              <ArrowRight className="h-4 w-4 ml-2 animate-pulse" />
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
 
-          {/* Skip Link */}
           {currentStep < welcomeSteps.length - 1 && (
             <button
               onClick={handleSkip}
-              className={`w-full mt-4 text-sm transition-colors ${
-                isDarkMode 
-                  ? 'text-gray-500 hover:text-gray-300' 
-                  : 'text-gray-400 hover:text-gray-600'
-              }`}
+              className="w-full mt-4 text-xs transition-colors text-muted-foreground hover:text-primary"
             >
               Lewati tutorial
             </button>

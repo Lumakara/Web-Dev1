@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { audioService } from '@/lib/audio';
 import { useProducts } from '@/hooks/useProducts';
 import { useAppStore } from '@/store/appStore';
-import type { Product } from '@/lib/firebase-db';
+import type { Product } from '@/lib/db';
 import { Skeleton } from '@/components/SkeletonLoader';
 
 // =============================================================================
@@ -580,7 +580,7 @@ function AddToCartButton({
           size="lg"
           className={cn(
             "flex-1 h-14 text-base font-semibold transition-all duration-200",
-            "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600",
+            "bg-primary hover:bg-secondary text-primary-foreground shadow-sm transition-colors",
             "shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-70"
           )}
           onClick={handleAddToCart}
@@ -598,7 +598,7 @@ function AddToCartButton({
           size="lg"
           className={cn(
             "flex-1 h-14 text-base font-semibold transition-all duration-200",
-            "bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500",
+            "bg-accent hover:bg-accent/80 text-primary shadow-sm transition-colors",
             "shadow-lg hover:shadow-xl active:scale-[0.98] disabled:opacity-70"
           )}
           onClick={handleBuyNow}

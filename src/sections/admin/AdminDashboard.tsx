@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { TrendingUp, ShoppingBag, Package, ArrowUpRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProducts } from '@/hooks/useProducts';
-import { OrderService, TicketService } from '@/lib/firebase-db';
-import type { Order, SupportTicket } from '@/lib/firebase-db';
+import { OrderService, TicketService } from '@/lib/db';
+import type { Order, SupportTicket } from '@/lib/db';
 
 interface DashboardStats {
   totalRevenue: number;

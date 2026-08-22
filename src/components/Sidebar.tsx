@@ -17,10 +17,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     user, 
     profile, 
     isAuthenticated, 
-    isDarkMode, 
   } = useAppStore();
   
-  const { signOut } = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
   // Initialize audio on first user interaction
@@ -35,7 +34,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const handleLogout = async () => {
     audioService.playClick();
-    await signOut();
+    await logout();
     onClose();
     navigate('/');
   };
@@ -52,43 +51,35 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { id: 'profile', label: 'Profil Saya', icon: User, path: '/profile' },
   ];
 
-  const bgClass = isDarkMode ? 'bg-gray-900' : 'bg-white';
-  const textClass = isDarkMode ? 'text-white' : 'text-gray-900';
-  const subTextClass = isDarkMode ? 'text-gray-400' : 'text-gray-500';
-  const borderClass = isDarkMode ? 'border-gray-700' : 'border-gray-200';
-  const hoverClass = isDarkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
-  const sectionBgClass = isDarkMode ? 'bg-gray-800/50' : 'bg-gradient-to-r from-blue-50 to-orange-50';
-  const iconColorClass = isDarkMode ? 'text-gray-400' : 'text-gray-500';
-
   return (
     <>
-      {/* Overlay with blur effect */}
+      {/* Overlay with subtle backdrop filter */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300"
+          className="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 transition-opacity duration-300"
           onClick={onClose}
         />
       )}
 
-      {/* Sidebar with smooth animation */}
+      {/* Sidebar with Royal Blue Theme */}
       <aside 
-        className={`fixed top-0 left-0 h-full w-72 ${bgClass} z-50 shadow-2xl transform transition-all duration-500 ease-out ${
+        className={`fixed top-0 left-0 h-full w-72 bg-card text-foreground z-50 shadow-soft-lg transform transition-all duration-300 ease-out border-r border-border ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className={`flex items-center justify-between p-4 border-b ${borderClass}`}>
+        <div className="flex items-center justify-between p-4 border-b border-border bg-card">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-orange-500 rounded-xl flex items-center justify-center shadow-lg animate-pulse">
-              <span className="text-white font-bold text-lg">L</span>
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-sm">
+              <span className="text-primary-foreground font-bold text-lg">L</span>
             </div>
-            <span className={`font-bold text-lg ${textClass}`}>Layanan Digital</span>
+            <span className="font-bold text-lg text-primary">Layanan Digital</span>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={() => { audioService.playClick(); onClose(); }} 
-            className={`${isDarkMode ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-700'} rounded-lg hover:rotate-90 transition-transform duration-300`}
+            className="text-secondary hover:text-primary hover:bg-muted rounded-lg transition-transform duration-300"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -96,25 +87,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* User Info */}
         {isAuthenticated ? (
-          <div className={`p-4 ${sectionBgClass} border-b ${borderClass}`}>
+          <div className="p-4 bg-background border-b border-border">
             <div className="flex items-center gap-3">
-              <Avatar className="h-14 w-14 border-3 border-white shadow-lg ring-2 ring-blue-500/20 hover:scale-110 transition-transform duration-300">
+              <Avatar className="h-12 w-12 border-2 border-border shadow-sm">
                 <AvatarImage src={profile?.avatar_url || user?.photoURL || ''} />
-                <AvatarFallback className="bg-gradient-to-r from-blue-600 to-orange-500 text-white text-lg font-bold">
+                <AvatarFallback className="bg-accent text-primary text-base font-bold">
                   {(profile?.full_name || user?.displayName || 'U').charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className={`font-bold truncate ${textClass}`}>{profile?.full_name || user?.displayName}</p>
-                <p className={`text-sm truncate ${subTextClass}`}>{profile?.email || user?.email}</p>
+                <p className="font-bold truncate text-primary">{profile?.full_name || user?.displayName}</p>
+                <p className="text-xs truncate text-muted-foreground">{profile?.email || user?.email}</p>
               </div>
             </div>
           </div>
         ) : (
-          <div className={`p-4 ${sectionBgClass} border-b ${borderClass}`}>
-            <p className={`text-sm ${subTextClass} mb-3`}>Masuk untuk mengakses fitur lengkap</p>
+          <div className="p-4 bg-background border-b border-border">
+            <p className="text-xs text-muted-foreground mb-3">Masuk untuk mengakses fitur lengkap</p>
             <Link to="/auth" onClick={handleNavClick}>
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
+              <Button className="w-full bg-primary text-primary-foreground hover:bg-secondary transition-colors duration-200 font-semibold shadow-sm">
                 Masuk / Daftar
               </Button>
             </Link>
@@ -123,21 +114,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="p-3 space-y-1">
-          <p className={`text-xs font-bold uppercase tracking-wider mb-2 px-3 ${subTextClass}`}>Menu</p>
-          {navItems.map((item, index) => {
+          <p className="text-xs font-bold uppercase tracking-wider mb-2 px-3 text-muted-foreground">Menu</p>
+          {navItems.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.id}
                 to={item.path}
                 onClick={handleNavClick}
-                className={`flex items-center gap-3 w-full p-3 rounded-xl ${hoverClass} transition-all duration-300 text-left group ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} hover:translate-x-1`}
-                style={{ animationDelay: `${index * 50}ms` }}
+                className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-muted transition-all duration-200 text-left group text-secondary hover:text-primary"
               >
-                <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 group-hover:bg-gray-700' : 'bg-gray-100 group-hover:bg-gray-200'} transition-all duration-300 group-hover:scale-110`}>
-                  <Icon className={`h-5 w-5 ${iconColorClass} group-hover:text-blue-500 transition-colors`} />
+                <div className="p-2 rounded-lg bg-background group-hover:bg-card transition-colors">
+                  <Icon className="h-5 w-5 text-secondary group-hover:text-primary transition-colors" />
                 </div>
-                <span className="font-medium group-hover:text-blue-500 transition-colors">{item.label}</span>
+                <span className="font-medium text-sm">{item.label}</span>
               </Link>
             );
           })}
@@ -146,29 +136,29 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <a
             href="/admin"
             onClick={handleNavClick}
-            className={`flex items-center gap-3 w-full p-3 rounded-xl ${hoverClass} transition-all duration-300 text-left group ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} hover:translate-x-1`}
+            className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-muted transition-all duration-200 text-left group text-secondary hover:text-primary"
           >
-            <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-gray-800 group-hover:bg-gray-700' : 'bg-gray-100 group-hover:bg-gray-200'} transition-all duration-300 group-hover:scale-110`}>
-              <Shield className={`h-5 w-5 ${iconColorClass} group-hover:text-purple-500 transition-colors`} />
+            <div className="p-2 rounded-lg bg-background group-hover:bg-card transition-colors">
+              <Shield className="h-5 w-5 text-secondary group-hover:text-primary transition-colors" />
             </div>
-            <span className="font-medium group-hover:text-purple-500 transition-colors">Admin Dashboard</span>
+            <span className="font-medium text-sm">Admin Dashboard</span>
           </a>
         </nav>
 
         {/* Footer */}
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t ${borderClass} ${bgClass}`}>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
           {isAuthenticated ? (
             <Button 
               variant="outline" 
-              className={`w-full flex items-center gap-2 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] ${isDarkMode ? 'hover:bg-red-900/20 border-red-900/30' : ''}`}
+              className="w-full flex items-center gap-2 text-destructive border-border hover:bg-destructive/10 transition-colors"
               onClick={handleLogout}
             >
               <LogOut className="h-4 w-4" />
               Keluar
             </Button>
           ) : (
-            <div className={`text-center text-xs ${subTextClass}`}>
-              © 2024 Layanan Digital
+            <div className="text-center text-xs text-muted-foreground">
+              © 2026 Layanan Digital
             </div>
           )}
         </div>

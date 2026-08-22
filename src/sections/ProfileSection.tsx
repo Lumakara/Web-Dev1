@@ -31,10 +31,9 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppStore } from '@/store/appStore';
-import { OrderService, UserService } from '@/lib/firebase-db';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import type { Order } from '@/lib/firebase-db';
+import { OrderService, UserService } from '@/lib/db';
+import { supabase } from '@/lib/supabase';
+import type { Order } from '@/lib/db';
 import { Link } from 'react-router-dom';
 import { audioService } from '@/lib/audio';
 import { toast } from 'sonner';
@@ -53,7 +52,7 @@ export function ProfileSection() {
     toggleMusic,
   } = useAppStore();
   
-  const { signOut, updateProfile: updateAuthProfile } = useAuth();
+  const { logout, updateProfile: updateAuthProfile } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -112,7 +111,7 @@ export function ProfileSection() {
 
   const handleLogout = async () => {
     audioService.playClick();
-    await signOut();
+    await logout();
   };
 
   const handleSaveProfile = async () => {
@@ -122,14 +121,14 @@ export function ProfileSection() {
     audioService.playClick();
     
     try {
-      // Update Firestore profile dengan semua field
+      // Update Supabase profile with all editable fields.
       await UserService.updateProfile(user.uid, {
         full_name: editForm.full_name,
         phone: editForm.phone,
         address: editForm.address,
       });
       
-      // Update Firebase Auth profile
+      // Update Supabase Auth metadata.
       await updateAuthProfile({
         displayName: editForm.full_name,
       });
@@ -171,21 +170,20 @@ export function ProfileSection() {
     audioService.playClick();
     
     try {
-      // Upload to Firebase Storage
-      const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      
-      // Update profiles
+      const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      const objectPath = `${user.uid}/avatar.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(objectPath, file, { upsert: true, contentType: file.type, cacheControl: '3600' });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('avatars').getPublicUrl(objectPath);
+      const downloadURL = `${data.publicUrl}?v=${Date.now()}`;
       await UserService.updateProfile(user.uid, { avatar_url: downloadURL });
       await updateAuthProfile({ photoURL: downloadURL });
-      
-      // Update local state
       setProfile({
         ...profile!,
         avatar_url: downloadURL,
       });
-      
       audioService.playSuccess();
       toast.success('Foto profil berhasil diperbarui!');
     } catch (error) {
@@ -231,7 +229,7 @@ export function ProfileSection() {
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
         }`}
       >
-        <div className="w-24 h-24 bg-gradient-to-r from-blue-100 to-orange-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
+        <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
           <User className="h-12 w-12 text-gray-400" />
         </div>
         <h2 className="text-xl font-semibold text-gray-800">Belum Masuk</h2>
@@ -239,7 +237,7 @@ export function ProfileSection() {
           Silakan masuk untuk melihat profil dan riwayat pesanan Anda
         </p>
         <Link to="/auth">
-          <Button className="bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 transition-all duration-300 hover:shadow-lg hover:scale-105">
+          <Button className="bg-primary hover:bg-secondary text-primary-foreground font-semibold shadow-sm transition-colors">
             Masuk / Daftar
           </Button>
         </Link>
@@ -255,7 +253,7 @@ export function ProfileSection() {
     >
       {/* Profile Header */}
       <div 
-        className={`bg-gradient-to-r from-blue-600 to-orange-500 rounded-2xl p-6 text-white mb-6 relative overflow-hidden transition-all duration-500 hover:scale-[1.01] ${
+        className={`bg-primary text-primary-foreground rounded-2xl p-6 mb-6 relative overflow-hidden transition-all duration-300 ${
           isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'
         }`}
         style={{ transitionDelay: '50ms' }}
@@ -346,7 +344,7 @@ export function ProfileSection() {
         style={{ transitionDelay: '200ms' }}
       >
         <Card className="mb-6 overflow-hidden hover:shadow-lg transition-all duration-300">
-          <CardHeader className="pb-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800">
+          <CardHeader className="pb-3 bg-background border-b border-border">
             <CardTitle className="text-lg flex items-center gap-2">
               <Settings className="h-5 w-5 text-blue-600 animate-spin" style={{ animationDuration: '20s' }} />
               Pengaturan Website
@@ -354,7 +352,7 @@ export function ProfileSection() {
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             {/* Dark Mode Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50 hover:from-gray-100 dark:hover:from-gray-800 transition-all duration-300 hover:translate-x-1">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-background hover:bg-muted transition-colors duration-200">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-orange-100 dark:bg-orange-900/30'} transition-all duration-300 hover:rotate-12 hover:scale-110`}>
                   {isDarkMode ? <Moon className="h-4 w-4 text-blue-600" /> : <Sun className="h-4 w-4 text-orange-600" />}
@@ -372,7 +370,7 @@ export function ProfileSection() {
             </div>
 
             {/* Sound Effects Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50 hover:from-gray-100 dark:hover:from-gray-800 transition-all duration-300 hover:translate-x-1">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-background hover:bg-muted transition-colors duration-200">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${soundEnabled ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'} transition-all duration-300 hover:scale-110`}>
                   {soundEnabled ? <Volume2 className="h-4 w-4 text-green-600" /> : <VolumeX className="h-4 w-4 text-gray-400" />}
@@ -390,7 +388,7 @@ export function ProfileSection() {
             </div>
 
             {/* Music Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50 hover:from-gray-100 dark:hover:from-gray-800 transition-all duration-300 hover:translate-x-1">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-background hover:bg-muted transition-colors duration-200">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${musicEnabled ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-gray-100 dark:bg-gray-800'} transition-all duration-300 ${musicEnabled ? 'animate-pulse' : ''}`}>
                   <Music className={`h-4 w-4 ${musicEnabled ? 'text-purple-600' : 'text-gray-400'}`} />
@@ -408,7 +406,7 @@ export function ProfileSection() {
             </div>
 
             {/* Volume Slider */}
-            <div className="p-3 rounded-xl bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50">
+            <div className="p-3 rounded-xl bg-background border border-border">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Volume1 className="h-4 w-4 text-gray-500" />
@@ -429,7 +427,7 @@ export function ProfileSection() {
 
             {/* Language Selector (Placeholder) */}
             <div 
-              className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50 hover:from-gray-100 dark:hover:from-gray-800 transition-all duration-300 hover:translate-x-1 cursor-pointer group"
+              className="flex items-center justify-between p-3 rounded-xl bg-background hover:bg-muted transition-colors duration-200 cursor-pointer group"
               onClick={() => toast.info('Fitur bahasa akan segera hadir!')}
             >
               <div className="flex items-center gap-3">
@@ -445,7 +443,7 @@ export function ProfileSection() {
             </div>
 
             {/* Notification Preferences */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-gray-50 to-transparent dark:from-gray-800/50 hover:from-gray-100 dark:hover:from-gray-800 transition-all duration-300 hover:translate-x-1">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-background hover:bg-muted transition-colors duration-200">
               <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-lg ${notificationsEnabled ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'} transition-all duration-300 ${notificationsEnabled ? 'animate-bounce' : ''}`} style={{ animationDuration: '2s' }}>
                   <Bell className={`h-4 w-4 ${notificationsEnabled ? 'text-red-600' : 'text-gray-400'}`} />

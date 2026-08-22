@@ -1,4 +1,5 @@
 @import './styles/animations.css';
+@import './styles/theme.css';
 
 @tailwind base;
 @tailwind components;
@@ -6,48 +7,49 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
+    /* Updated Tailwind HSL tokens mapped to Royal Blue theme */
+    --background: 40 100% 96%;           /* Swan Wing #F5F0E9 */
+    --foreground: 217 77% 32%;           /* Sapphire #30507D */
+    --card: 0 0% 100%;                   /* White */
+    --card-foreground: 217 77% 32%;      /* Sapphire */
+    --popover: 0 0% 100%;                /* White */
+    --popover-foreground: 217 77% 32%;   /* Sapphire */
+    --primary: 217 77% 20%;              /* Royal Blue #112250 */
+    --primary-foreground: 40 100% 96%;   /* Swan Wing */
+    --secondary: 217 77% 32%;            /* Sapphire */
+    --secondary-foreground: 0 0% 100%;   /* White */
+    --muted: 40 100% 96%;                /* Swan Wing */
+    --muted-foreground: 0 0% 33%;        /* Muted Gray #777777 */
+    --accent: 38 56% 61%;                /* Quicksand #E0C58F */
+    --accent-foreground: 217 77% 20%;    /* Royal Blue */
+    --destructive: 0 84.2% 60.2%;        /* Error Red */
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 25 40% 84%;                /* Shellstone #D9CBC2 */
+    --input: 25 40% 84%;                 /* Shellstone */
+    --ring: 217 77% 20%;                 /* Royal Blue */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: 217 30% 14%;           /* Dark bg #0F1419 */
+    --foreground: 38 56% 61%;            /* Quicksand (accent in dark) */
+    --card: 217 25% 16%;                 /* Dark surface #1A1F2E */
+    --card-foreground: 38 56% 61%;       /* Quicksand */
+    --popover: 217 25% 16%;              /* Dark surface */
+    --popover-foreground: 38 56% 61%;    /* Quicksand */
+    --primary: 217 77% 20%;              /* Royal Blue */
+    --primary-foreground: 40 100% 96%;   /* Swan Wing */
+    --secondary: 217 77% 32%;            /* Sapphire */
+    --secondary-foreground: 40 100% 96%;
+    --muted: 217 25% 20%;                /* Dark muted */
+    --muted-foreground: 0 0% 60%;        /* Light gray */
+    --accent: 38 56% 61%;                /* Quicksand */
+    --accent-foreground: 217 77% 20%;    /* Royal Blue */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --border: 217 25% 20%;               /* Dark border */
+    --input: 217 25% 20%;                /* Dark input */
+    --ring: 217 77% 20%;                 /* Royal Blue */
   }
 }
 
@@ -80,29 +82,55 @@
 }
 
 @layer utilities {
+  /* Theme-aware colors */
+  .text-primary {
+    color: var(--color-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-secondary);
+  }
+
+  .text-accent {
+    color: var(--color-accent);
+  }
+
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-secondary {
+    background-color: var(--color-secondary);
+  }
+
+  .bg-accent {
+    background-color: var(--color-accent);
+  }
+
+  /* Scrollbar styling */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-  
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-track {
     background: transparent;
   }
-  
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: hsl(var(--muted-foreground) / 0.3);
     border-radius: 3px;

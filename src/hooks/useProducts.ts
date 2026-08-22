@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { ProductService, type Product } from '@/lib/firebase-db';
+import { ProductService, type Product } from '@/lib/db';
 import { useAppStore } from '@/store/appStore';
 import { showErrorBox } from '@/lib/error-tracker';
 
@@ -19,15 +19,13 @@ export const useProducts = () => {
         'Error': err?.message || 'Failed to fetch products',
       }, 'error');
       setError(err.message || 'Failed to fetch products');
-      // Fallback to mock data if Firestore is not configured
-      loadMockProducts();
     } finally {
       setIsLoading(false);
     }
   }, [setProducts]);
 
-  const loadMockProducts = () => {
-    const mockProducts: Product[] = [
+  /* migration source data is intentionally not used at runtime.
+  const mockProducts: Product[] = [
       {
         id: 'wifi',
         title: 'Wi-Fi Installation Service',
@@ -220,7 +218,7 @@ export const useProducts = () => {
       },
     ];
     setProducts(mockProducts);
-  };
+  }; */
 
   useEffect(() => {
     if (products.length === 0) {
@@ -249,9 +247,8 @@ export const useProducts = () => {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      const updated = await ProductService.update(id, updates);
-      setProducts(products.map((p) => (p.id === id ? updated : p)));
-      return updated;
+      await ProductService.update(id, updates);
+      setProducts(products.map((p) => (p.id === id ? { ...p, ...updates } : p)));
     } catch (err: any) {
       throw err;
     }
@@ -277,7 +274,7 @@ export const useProducts = () => {
 
   const updatePrice = async (id: string, basePrice: number, discountPrice?: number) => {
     try {
-      await ProductService.updatePrice(id, basePrice, discountPrice);
+      await ProductService.updatePrice(id, basePrice);
       setProducts(products.map((p) => 
         p.id === id ? { ...p, base_price: basePrice, discount_price: discountPrice } : p
       ));

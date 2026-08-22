@@ -8,12 +8,12 @@
  */
 export const CSP_DIRECTIVES = {
   'default-src': ["'self'"],
-  'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.googleapis.com", "https://*.firebaseapp.com"],
+  'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://*.googleapis.com"],
   'style-src': ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
   'font-src': ["'self'", "https://fonts.gstatic.com", "data:"],
   'img-src': ["'self'", "data:", "https:", "blob:"],
-  'connect-src': ["'self'", "https://*.firebaseio.com", "https://*.googleapis.com", "wss://*.firebaseio.com"],
-  'frame-src': ["'self'", "https://*.firebaseapp.com"],
+  'connect-src': ["'self'", "https://*.googleapis.com"],
+  'frame-src': ["'self'"],
   'media-src': ["'self'", "https:"],
 };
 
@@ -274,49 +274,9 @@ export const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
 };
 
-// ============================================
-// RECAPTCHA UTILITIES
-// ============================================
-
 export interface RateLimitConfig {
   maxRequests: number;
   windowMs: number;
-}
-
-/**
- * Execute reCAPTCHA v3
- * Note: Requires reCAPTCHA site key to be configured
- */
-export async function executeRecaptcha(action: string): Promise<string> {
-  // Check if grecaptcha is available
-  const grecaptcha = (window as unknown as { grecaptcha?: { execute: (key: string, options: { action: string }) => Promise<string> } }).grecaptcha;
-  
-  if (!grecaptcha) {
-    console.warn('reCAPTCHA not loaded');
-    return '';
-  }
-  
-  const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
-  if (!siteKey) {
-    console.warn('reCAPTCHA site key not configured');
-    return '';
-  }
-  
-  try {
-    const token = await grecaptcha.execute(siteKey, { action });
-    return token;
-  } catch (error) {
-    console.error('reCAPTCHA execution failed:', error);
-    return '';
-  }
-}
-
-/**
- * Validate reCAPTCHA score on server
- * Note: This should be called on your backend
- */
-export function isRecaptchaScoreValid(score: number, threshold = 0.5): boolean {
-  return score >= threshold;
 }
 
 // ============================================

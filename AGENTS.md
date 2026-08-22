@@ -238,9 +238,7 @@ When adding tests, consider:
 ### Authentication
 - Firebase Auth handles all authentication
 - JWT tokens managed by Firebase
-- Admin panel uses hardcoded credentials (development only):
-  - Email: `admin@lumakara.com`
-  - Password: `admin123`
+- Admin access is managed through Supabase Auth and `public.profiles.role`; no credentials are stored in the repository.
 
 ### Database
 - Firebase Firestore security rules should be configured

@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react';
-import { TicketService, type SupportTicket } from '@/lib/firebase-db';
+import { TicketService, type SupportTicket } from '@/lib/db';
 import { TelegramBot } from '@/lib/telegram';
 import { EmailService } from '@/lib/emailjs';
 import { useAppStore } from '@/store/appStore';
 import { showErrorBox } from '@/lib/error-tracker';
+import { supabase } from '@/lib/supabase';
 
 export interface TicketFormData {
   subject: string;
@@ -20,13 +21,14 @@ export const useSupport = () => {
   const submitTicket = useCallback(async (formData: TicketFormData): Promise<SupportTicket> => {
     setIsSubmitting(true);
     try {
-      // Create ticket in Firestore
+      // Create ticket
       const ticket = await TicketService.create({
         user_id: user?.uid,
         subject: formData.subject,
         category: formData.category,
         email: formData.email,
         description: formData.description,
+        status: 'open',
       });
 
       // Send notification to Telegram
@@ -39,11 +41,20 @@ export const useSupport = () => {
         timestamp: new Date(ticket.created_at || '').toLocaleString('id-ID'),
       });
 
-      // Send notification email to admin
-      await EmailService.sendNotificationEmail(
-        'admin@lumakara.com',
-        'Admin',
-        '🎫 Tiket Baru: ' + ticket.subject,
+      // Send notification email to admin (query from profiles with admin role)
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .in('role', ['super_admin', 'manager', 'admin'])
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      
+      if (adminProfile) {
+        await EmailService.sendNotificationEmail(
+          adminProfile.email,
+          adminProfile.full_name || 'Admin',
+          '🎫 Tiket Baru: ' + ticket.subject,
         `Tiket dukungan baru telah dibuat:
 
 📋 ID: #${ticket.id}
@@ -56,7 +67,8 @@ export const useSupport = () => {
 ${ticket.description}
 
 Silakan segera ditindaklanjuti.`
-      );
+        );
+      }
 
       // Send confirmation email to user
       await EmailService.sendNotificationEmail(

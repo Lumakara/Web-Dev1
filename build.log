@@ -1,0 +1,13 @@
+
+> my-app@0.0.0 build
+> tsc -b && vite build
+
+src/AdminApp.tsx(726,20): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(727,22): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(728,23): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(745,20): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(746,22): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(747,23): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(778,20): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(779,22): error TS2304: Cannot find name 'admin'.
+src/AdminApp.tsx(780,23): error TS2304: Cannot find name 'admin'.

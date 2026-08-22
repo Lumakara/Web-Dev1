@@ -1,6 +1,16 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { copyFileSync } from 'node:fs';
+
+function spaFallbackPlugin() {
+  return {
+    name: 'spa-static-fallback',
+    closeBundle() {
+      copyFileSync('dist/index.html', 'dist/404.html');
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -9,28 +19,23 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
+      spaFallbackPlugin(),
     ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      dedupe: ['react', 'react-dom'],
     },
     server: {
-      port: 3000,
-      host: true,
+      port: 3000, // Override Vite default to user's preferred port
+      host: '0.0.0.0', // Listen on all interfaces for network access
       // Optimize dev server
       hmr: {
         overlay: false,
       },
-      // Proxy for Pakasir API to bypass CORS
-      proxy: {
-        '/api/pakasir': {
-          target: 'https://app.pakasir.com',
-          changeOrigin: true,
-          secure: true,
-          rewrite: (path) => path.replace(/^\/api\/pakasir/, '/api'),
-        },
-      },
+      // Payment providers are called only by Supabase Edge Functions.
+      proxy: {},
     },
     build: {
       outDir: 'dist',
@@ -70,8 +75,7 @@ export default defineConfig(({ mode }) => {
             'utils': ['axios', 'date-fns', 'clsx', 'tailwind-merge'],
             // Notifications
             'notifications': ['sonner'],
-            // Firebase
-            'firebase': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage'],
+
           },
           // Entry file naming with content hash
           entryFileNames: 'assets/[name]-[hash:8].js',
@@ -124,17 +128,16 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: [
         'react',
+        'react/jsx-runtime',
+        'react/jsx-dev-runtime',
         'react-dom',
+        'react-dom/client',
         'react-router-dom',
         'zustand',
         'lucide-react',
         'sonner',
         'axios',
         'date-fns',
-        'firebase/app',
-        'firebase/auth',
-        'firebase/firestore',
-        'firebase/storage',
         '@radix-ui/react-dialog',
         '@radix-ui/react-dropdown-menu',
         '@radix-ui/react-tabs',
@@ -148,11 +151,11 @@ export default defineConfig(({ mode }) => {
       // Drop console and debugger in production
       drop: isProduction ? ['console', 'debugger'] : [],
       // Minify syntax
-      minifySyntax: true,
+      minifySyntax: isProduction,
       // Minify whitespace
-      minifyWhitespace: true,
+      minifyWhitespace: isProduction,
       // Minify identifiers
-      minifyIdentifiers: true,
+      minifyIdentifiers: isProduction,
     },
     // CSS configuration
     css: {

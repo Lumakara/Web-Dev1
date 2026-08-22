@@ -1,0 +1,6 @@
+
+> my-app@0.0.0 build
+> tsc -b && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...

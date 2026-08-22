@@ -4,47 +4,44 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { Sparkles, Zap, Heart, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ============================================
 // TYPES
 // ============================================
 
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  opacity: number;
-  rotation: number;
-  emoji: string;
-  life: number;
-  maxLife: number;
-}
-
 interface CursorTrail {
   x: number;
   y: number;
   id: number;
-  emoji: string;
+  icon: 'sparkles' | 'zap' | 'star' | 'heart';
   opacity: number;
   scale: number;
 }
 
+interface ClickParticle {
+  icon: 'sparkles' | 'zap' | 'star' | 'heart';
+  vx: number;
+  vy: number;
+  rotation: number;
+  scale: number;
+}
+
 // ============================================
-// CONFIGURATION
+// ICON MAPPER
 // ============================================
 
-const EMOJIS = {
-  sparkles: ['✨', '⭐', '🌟', '💫', '⚡'],
-  tech: ['💻', '📱', '⚙️', '🔧', '🚀', '💡'],
-  payment: ['💳', '💰', '💵', '🏦', '🔒'],
-  services: ['📶', '📹', '🎨', '🎬', '🎮', '🌐'],
-  hearts: ['❤️', '🧡', '💛', '💚', '💙', '💜'],
-  fun: ['🎉', '🎊', '🎈', '🌈', '🔥', '👏'],
-};
+const ICON_MAP = {
+  sparkles: Sparkles,
+  zap: Zap,
+  star: Star,
+  heart: Heart,
+} as const;
+
+const ICON_POOL = ['sparkles', 'zap', 'star', 'heart'] as const;
+
+const getRandomIcon = () => ICON_POOL[Math.floor(Math.random() * ICON_POOL.length)];
 
 const COLORS = [
   '#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', 
@@ -52,154 +49,16 @@ const COLORS = [
 ];
 
 // ============================================
-// FLOATING BACKGROUND PARTICLES
-// ============================================
-
-export function FloatingBackground({ 
-  className,
-  density = 'medium',
-  speed = 'normal',
-  theme = 'mixed'
-}: { 
-  className?: string;
-  density?: 'low' | 'medium' | 'high';
-  speed?: 'slow' | 'normal' | 'fast';
-  theme?: 'sparkles' | 'tech' | 'services' | 'mixed';
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const animationRef = useRef<number | undefined>(undefined);
-
-  const getEmojiSet = () => {
-    switch (theme) {
-      case 'sparkles': return EMOJIS.sparkles;
-      case 'tech': return EMOJIS.tech;
-      case 'services': return EMOJIS.services;
-      default: return [...EMOJIS.sparkles, ...EMOJIS.tech, ...EMOJIS.services];
-    }
-  };
-
-  const getParticleCount = () => {
-    switch (density) {
-      case 'low': return 15;
-      case 'high': return 40;
-      default: return 25;
-    }
-  };
-
-  const getSpeedMultiplier = () => {
-    switch (speed) {
-      case 'slow': return 0.5;
-      case 'fast': return 2;
-      default: return 1;
-    }
-  };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    // Initialize particles
-    const emojis = getEmojiSet();
-    const particleCount = getParticleCount();
-    
-    particlesRef.current = Array.from({ length: particleCount }, (_, i) => ({
-      id: i,
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.5 * getSpeedMultiplier(),
-      vy: (Math.random() - 0.5) * 0.5 * getSpeedMultiplier() - 0.2,
-      size: 16 + Math.random() * 16,
-      opacity: 0.3 + Math.random() * 0.4,
-      rotation: Math.random() * 360,
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
-      life: 0,
-      maxLife: 1000 + Math.random() * 1000,
-    }));
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      particlesRef.current.forEach((particle) => {
-        // Update position
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-        particle.rotation += 0.5;
-        particle.life++;
-
-        // Wrap around screen
-        if (particle.y < -50) {
-          particle.y = canvas.height + 50;
-          particle.x = Math.random() * canvas.width;
-        }
-        if (particle.x < -50) particle.x = canvas.width + 50;
-        if (particle.x > canvas.width + 50) particle.x = -50;
-
-        // Calculate opacity based on life
-        const lifeProgress = particle.life / particle.maxLife;
-        const currentOpacity = particle.opacity * (1 - Math.sin(lifeProgress * Math.PI));
-
-        // Draw emoji
-        ctx.save();
-        ctx.translate(particle.x, particle.y);
-        ctx.rotate((particle.rotation * Math.PI) / 180);
-        ctx.globalAlpha = currentOpacity;
-        ctx.font = `${particle.size}px serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(particle.emoji, 0, 0);
-        ctx.restore();
-
-        // Reset if max life reached
-        if (particle.life >= particle.maxLife) {
-          particle.life = 0;
-          particle.emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        }
-      });
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animate();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [density, speed, theme]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className={cn(
-        "fixed inset-0 pointer-events-none z-0",
-        className
-      )}
-    />
-  );
-}
-
-// ============================================
 // CURSOR TRAIL EFFECT
 // ============================================
 
 export function CursorTrailEffect({
   enabled = true,
-  emoji = '✨',
+  icon = 'sparkles',
   maxTrails = 20,
 }: {
   enabled?: boolean;
-  emoji?: string;
+  icon?: 'sparkles' | 'zap' | 'star' | 'heart';
   maxTrails?: number;
 }) {
   const [trails, setTrails] = useState<CursorTrail[]>([]);
@@ -222,7 +81,7 @@ export function CursorTrailEffect({
           x: e.clientX,
           y: e.clientY,
           id: idCounter.current++,
-          emoji,
+          icon,
           opacity: 1,
           scale: 1,
         };
@@ -233,7 +92,7 @@ export function CursorTrailEffect({
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [enabled, emoji, maxTrails]);
+  }, [enabled, icon, maxTrails]);
 
   // Animate trails
   useEffect(() => {
@@ -259,20 +118,23 @@ export function CursorTrailEffect({
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {trails.map((trail) => (
-        <div
-          key={trail.id}
-          className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-none"
-          style={{
-            left: trail.x,
-            top: trail.y,
-            opacity: trail.opacity,
-            transform: `translate(-50%, -50%) scale(${trail.scale})`,
-          }}
-        >
-          <span className="text-lg">{trail.emoji}</span>
-        </div>
-      ))}
+      {trails.map((trail) => {
+        const IconComponent = ICON_MAP[trail.icon];
+        return (
+          <div
+            key={trail.id}
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-none"
+            style={{
+              left: trail.x,
+              top: trail.y,
+              opacity: trail.opacity,
+              transform: `translate(-50%, -50%) scale(${trail.scale})`,
+            }}
+          >
+            <IconComponent className="w-5 h-5 text-blue-500" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -286,23 +148,16 @@ export function ClickBurstEffect() {
     id: number;
     x: number;
     y: number;
-    particles: Array<{
-      emoji: string;
-      vx: number;
-      vy: number;
-      rotation: number;
-      scale: number;
-    }>;
+    particles: Array<ClickParticle>;
   }>>([]);
   const idCounter = useRef(0);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      const emojis = [...EMOJIS.fun, ...EMOJIS.sparkles];
       const particleCount = 8 + Math.floor(Math.random() * 8);
       
-      const particles = Array.from({ length: particleCount }, () => ({
-        emoji: emojis[Math.floor(Math.random() * emojis.length)],
+      const particles: ClickParticle[] = Array.from({ length: particleCount }, () => ({
+        icon: getRandomIcon(),
         vx: (Math.random() - 0.5) * 10,
         vy: (Math.random() - 0.5) * 10 - 3,
         rotation: Math.random() * 360,
@@ -349,19 +204,22 @@ export function ClickBurstEffect() {
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
       {bursts.map((burst) => (
         <div key={burst.id}>
-          {burst.particles.map((particle, i) => (
-            <div
-              key={i}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2"
-              style={{
-                left: burst.x + particle.vx * 10,
-                top: burst.y + particle.vy * 10,
-                transform: `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${particle.scale})`,
-              }}
-            >
-              <span className="text-xl">{particle.emoji}</span>
-            </div>
-          ))}
+          {burst.particles.map((particle, i) => {
+            const IconComponent = ICON_MAP[particle.icon];
+            return (
+              <div
+                key={i}
+                className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                style={{
+                  left: burst.x + particle.vx * 10,
+                  top: burst.y + particle.vy * 10,
+                  transform: `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${particle.scale})`,
+                }}
+              >
+                <IconComponent className="w-6 h-6 text-purple-500" />
+              </div>
+            );
+          })}
         </div>
       ))}
     </div>
@@ -392,20 +250,20 @@ export function UltraLoadingSpinner({
     <div className={cn("flex flex-col items-center justify-center gap-4", className)}>
       <div className={cn("relative", sizeClasses[size])}>
         {/* Outer ring */}
-        <div className="absolute inset-0 rounded-full border-4 border-blue-200 dark:border-blue-900/30" />
+        <div className="absolute inset-0 rounded-full border-4 border-border" />
         
-        {/* Animated gradient ring */}
+        {/* Animated primary ring */}
         <div 
-          className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 animate-spin"
+          className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"
           style={{ animationDuration: '1s' }}
         />
         
         {/* Inner pulsing circle */}
-        <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse" />
+        <div className="absolute inset-2 rounded-full bg-primary animate-pulse" />
         
-        {/* Center emoji */}
+        {/* Center icon */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg animate-bounce">⚡</span>
+          <Zap className="w-5 h-5 animate-bounce text-primary-foreground" />
         </div>
       </div>
       
@@ -433,7 +291,7 @@ export function CelebrationEffect({
     id: number;
     x: number;
     y: number;
-    emoji: string;
+    icon: 'sparkles' | 'zap' | 'star' | 'heart';
     vx: number;
     vy: number;
     rotation: number;
@@ -449,7 +307,7 @@ export function CelebrationEffect({
       id: i,
       x: window.innerWidth / 2,
       y: window.innerHeight / 2,
-      emoji: [...EMOJIS.fun, ...EMOJIS.hearts][Math.floor(Math.random() * 12)],
+      icon: getRandomIcon(),
       vx: (Math.random() - 0.5) * 20,
       vy: (Math.random() - 0.5) * 20 - 10,
       rotation: Math.random() * 360,
@@ -495,19 +353,23 @@ export function CelebrationEffect({
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {particles.map((p) => (
-        <div
-          key={p.id}
-          className="absolute transform -translate-x-1/2 -translate-y-1/2"
-          style={{
-            left: p.x,
-            top: p.y,
-            transform: `translate(-50%, -50%) rotate(${p.rotation}deg) scale(${p.scale})`,
-          }}
-        >
-          <span className="text-2xl">{p.emoji}</span>
-        </div>
-      ))}
+      {particles.map((p) => {
+        const IconComponent = ICON_MAP[p.icon];
+        return (
+          <div
+            key={p.id}
+            className="absolute transform -translate-x-1/2 -translate-y-1/2"
+            style={{
+              left: p.x,
+              top: p.y,
+              transform: `translate(-50%, -50%) rotate(${p.rotation}deg) scale(${p.scale})`,
+              color: p.color,
+            }}
+          >
+            <IconComponent className="w-6 h-6" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -528,7 +390,7 @@ export function HoverFloatEffect({
     id: number;
     x: number;
     y: number;
-    emoji: string;
+    icon: 'sparkles' | 'zap' | 'star' | 'heart';
     life: number;
   }>>([]);
   const idCounter = useRef(0);
@@ -543,7 +405,7 @@ export function HoverFloatEffect({
           id: idCounter.current++,
           x: Math.random() * 100,
           y: 100,
-          emoji: EMOJIS.sparkles[Math.floor(Math.random() * EMOJIS.sparkles.length)],
+          icon: getRandomIcon(),
           life: 1,
         },
       ]);
@@ -575,19 +437,22 @@ export function HoverFloatEffect({
       {children}
       
       {/* Floating particles */}
-      {particles.map(p => (
-        <div
-          key={p.id}
-          className="absolute pointer-events-none"
-          style={{
-            left: `${p.x}%`,
-            top: `${p.y}%`,
-            opacity: p.life,
-          }}
-        >
-          <span className="text-sm">{p.emoji}</span>
-        </div>
-      ))}
+      {particles.map(p => {
+        const IconComponent = ICON_MAP[p.icon];
+        return (
+          <div
+            key={p.id}
+            className="absolute pointer-events-none"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              opacity: p.life,
+            }}
+          >
+            <IconComponent className="w-4 h-4 text-blue-500" />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -708,10 +573,7 @@ export function ShimmerEffect({
     <div className={cn("relative overflow-hidden", className)}>
       {children}
       <div 
-        className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite]"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-        }}
+        className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-white/20"
       />
     </div>
   );
@@ -722,7 +584,6 @@ export function ShimmerEffect({
 // ============================================
 
 export default {
-  FloatingBackground,
   CursorTrailEffect,
   ClickBurstEffect,
   UltraLoadingSpinner,

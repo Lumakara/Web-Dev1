@@ -3,10 +3,10 @@
  * Provides offline functionality, background sync, and push notifications
  */
 
-const CACHE_NAME = 'layanan-digital-v1';
-const STATIC_CACHE = 'static-v1';
-const DYNAMIC_CACHE = 'dynamic-v1';
-const IMAGE_CACHE = 'images-v1';
+const CACHE_NAME = 'layanan-digital-v2';
+const STATIC_CACHE = 'static-v2';
+const DYNAMIC_CACHE = 'dynamic-v2';
+const IMAGE_CACHE = 'images-v2';
 
 // Assets to cache on install
 const STATIC_ASSETS = [
@@ -63,6 +63,11 @@ self.addEventListener('activate', (event) => {
         return self.clients.claim();
       })
   );
+});
+
+// Allow the page to explicitly retire this worker during development cleanup.
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Fetch event - cache strategies

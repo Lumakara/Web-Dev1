@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { 
   Star, Clock, ShoppingCart, Check, X, ChevronRight, ChevronLeft,
   Share2, Heart, Shield, Sparkles, Minus, Plus,
@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { audioService } from '@/lib/audio';
-import type { Product } from '@/lib/firebase-db';
+import type { Product } from '@/lib/db';
 
 interface ProductModalProps {
   product: Product | null;
@@ -22,7 +22,7 @@ interface ProductModalProps {
   onAddToCart: (product: Product, tierName: string, quantity?: number) => void;
   isInCart: (productId: string, tierName: string) => boolean;
   getCartQuantity: (productId: string, tierName: string) => number;
-  isDarkMode: boolean;
+  isDarkMode?: boolean;
 }
 
 // Product subcategories configuration
@@ -48,7 +48,6 @@ const PRODUCT_SUBCATEGORIES: Record<string, { id: string; name: string; descript
   ],
 };
 
-// Simple mobile detection hook
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -69,7 +68,6 @@ export const ProductModal = memo(function ProductModal({
   onAddToCart,
   isInCart,
   getCartQuantity,
-  isDarkMode,
 }: ProductModalProps) {
   const isMobile = useIsMobile();
   const [selectedTier, setSelectedTier] = useState<string>('');
@@ -81,7 +79,6 @@ export const ProductModal = memo(function ProductModal({
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedFeatures, setExpandedFeatures] = useState(false);
 
-  // Reset state when product changes
   useEffect(() => {
     if (product) {
       setSelectedTier(product.tiers[0]?.name || '');
@@ -91,7 +88,7 @@ export const ProductModal = memo(function ProductModal({
       setActiveTab('overview');
       setExpandedFeatures(false);
     }
-  }, [product?.id]); // Only reset when product ID changes
+  }, [product?.id]);
 
   const handleAddToCart = useCallback(() => {
     if (!product || !selectedTier) return;
@@ -130,7 +127,6 @@ export const ProductModal = memo(function ProductModal({
     }
   }, []);
 
-  // Early return if no product
   if (!product) return null;
 
   const selectedTierData = product.tiers.find(t => t.name === selectedTier);
@@ -142,12 +138,12 @@ export const ProductModal = memo(function ProductModal({
     ? Math.round(((product.base_price - (product.discount_price || 0)) / product.base_price) * 100)
     : 0;
 
-  const galleryImages = useMemo(() => [
+  const galleryImages = [
     product.image,
     product.icon,
     `https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800`,
     `https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800`,
-  ].filter(Boolean), [product.image, product.icon]);
+  ].filter(Boolean);
 
   const totalPrice = (selectedTierData?.price || 0) * quantity;
 
@@ -157,31 +153,20 @@ export const ProductModal = memo(function ProductModal({
       <Sheet open={isOpen} onOpenChange={onClose}>
         <SheetContent 
           side="bottom" 
-          className={cn(
-            "h-[95vh] p-0 border-0 rounded-t-3xl",
-            isDarkMode ? "bg-gray-900" : "bg-white"
-          )}
+          className="h-[95vh] p-0 border-0 rounded-t-3xl bg-card"
         >
           <DialogTitle className="sr-only">{product.title}</DialogTitle>
           
           {/* Header */}
-          <div className={cn(
-            "sticky top-0 z-30 px-4 py-3 flex items-center justify-between border-b",
-            isDarkMode ? "bg-gray-900/95 border-gray-800" : "bg-white/95 border-gray-100"
-          )}>
+          <div className="sticky top-0 z-30 px-4 py-3 flex items-center justify-between border-b border-border bg-card">
             <button 
               onClick={onClose}
-              className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center",
-                isDarkMode ? "bg-gray-800" : "bg-gray-100"
-              )}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-muted text-foreground"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <span className={cn("font-semibold", isDarkMode ? "text-white" : "text-gray-900")}>
-              Detail Produk
-            </span>
-            <button onClick={handleShare} className={cn("w-10 h-10 rounded-full flex items-center justify-center", isDarkMode ? "bg-gray-800" : "bg-gray-100")}>
+            <span className="font-semibold text-primary">Detail Produk</span>
+            <button onClick={handleShare} className="w-10 h-10 rounded-full flex items-center justify-center bg-muted text-foreground">
               <Share2 className="h-5 w-5" />
             </button>
           </div>
@@ -189,7 +174,7 @@ export const ProductModal = memo(function ProductModal({
           <ScrollArea className="h-[calc(95vh-140px)]">
             <div className="pb-32">
               {/* Image */}
-              <div className={cn("aspect-[4/3] relative", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
+              <div className="aspect-[4/3] relative bg-muted">
                 <img
                   src={galleryImages[activeImageIndex]}
                   alt={product.title}
@@ -199,12 +184,12 @@ export const ProductModal = memo(function ProductModal({
                 
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <div className="px-2 py-1 rounded-full text-xs font-bold bg-blue-500 text-white">
-                    <Star className="h-3 w-3 inline mr-1" />
+                  <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground">
+                    <Star className="h-3 w-3 inline mr-1 fill-accent text-accent" />
                     {product.rating}
                   </div>
                   {hasDiscount && (
-                    <div className="px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white">
+                    <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-accent text-primary">
                       -{discountPercent}%
                     </div>
                   )}
@@ -215,67 +200,52 @@ export const ProductModal = memo(function ProductModal({
                   <>
                     <button
                       onClick={() => setActiveImageIndex(prev => prev > 0 ? prev - 1 : galleryImages.length - 1)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary/70 text-primary-foreground flex items-center justify-center"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setActiveImageIndex(prev => prev < galleryImages.length - 1 ? prev + 1 : 0)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/50 text-white flex items-center justify-center"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary/70 text-primary-foreground flex items-center justify-center"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
                   </>
                 )}
-
-                {/* Indicators */}
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-                  {galleryImages.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setActiveImageIndex(idx)}
-                      className={cn(
-                        "h-1.5 rounded-full transition-all",
-                        activeImageIndex === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"
-                      )}
-                    />
-                  ))}
-                </div>
               </div>
 
               {/* Content */}
               <div className="p-4 space-y-4">
-                {/* Title */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className={isDarkMode ? "bg-gray-800" : ""}>
+                    <Badge className="bg-muted text-primary border-border">
                       <ProductIcon className="h-3 w-3 mr-1" />
                       {product.category}
                     </Badge>
-                    <Badge variant="outline" className={isDarkMode ? "border-gray-700" : ""}>
+                    <Badge variant="outline" className="border-border text-muted-foreground">
                       <Clock className="h-3 w-3 mr-1" />
                       {product.duration}
                     </Badge>
                   </div>
-                  <h1 className={cn("text-xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                  <h1 className="text-xl font-bold text-primary">
                     {product.title}
                   </h1>
                   <div className="flex items-center gap-2 mt-1">
-                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                    <span className={cn("font-semibold text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
+                    <Star className="h-4 w-4 fill-accent text-accent" />
+                    <span className="font-semibold text-sm text-foreground">
                       {product.rating}
                     </span>
-                    <span className="text-xs text-gray-500">({product.reviews} ulasan)</span>
+                    <span className="text-xs text-muted-foreground">({product.reviews} ulasan)</span>
                   </div>
                 </div>
 
                 {/* Price */}
-                <div className={cn("p-4 rounded-xl", isDarkMode ? "bg-gray-800" : "bg-blue-50")}>
-                  <span className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-blue-700")}>
+                <div className="p-4 rounded-xl bg-background border border-border">
+                  <span className="text-2xl font-bold text-primary">
                     Rp {totalPrice.toLocaleString('id-ID')}
                   </span>
                   {hasDiscount && (
-                    <span className="text-sm line-through ml-2 text-gray-500">
+                    <span className="text-sm line-through ml-2 text-muted-foreground">
                       Rp {product.base_price.toLocaleString('id-ID')}
                     </span>
                   )}
@@ -284,25 +254,21 @@ export const ProductModal = memo(function ProductModal({
                 {/* Subcategories */}
                 {hasSubcategories && (
                   <div>
-                    <h4 className={cn("font-semibold mb-2 text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
-                      Pilihan Paket
-                    </h4>
+                    <h4 className="font-semibold mb-2 text-sm text-primary">Pilihan Paket</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {subcategories.map((sub) => (
                         <button
                           key={sub.id}
                           onClick={() => setSelectedSubcategory(sub.id)}
                           className={cn(
-                            "p-3 rounded-xl border-2 text-left text-xs",
+                            "p-3 rounded-xl border text-left text-xs transition-colors",
                             selectedSubcategory === sub.id
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                              : isDarkMode ? "border-gray-700" : "border-gray-200"
+                              ? "border-primary bg-primary/5 text-primary"
+                              : "border-border bg-card text-muted-foreground"
                           )}
                         >
-                          <span className={cn("font-medium block", isDarkMode ? "text-white" : "text-gray-900")}>
-                            {sub.name}
-                          </span>
-                          <span className="text-gray-500 block mt-0.5">{sub.description}</span>
+                          <span className="font-medium block text-primary">{sub.name}</span>
+                          <span className="text-muted-foreground block mt-0.5">{sub.description}</span>
                         </button>
                       ))}
                     </div>
@@ -311,57 +277,45 @@ export const ProductModal = memo(function ProductModal({
 
                 {/* Tiers */}
                 <div>
-                  <h4 className={cn("font-semibold mb-2 text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
-                    Pilih Tier
-                  </h4>
+                  <h4 className="font-semibold mb-2 text-sm text-primary">Pilih Tier</h4>
                   <div className="space-y-2">
                     {product.tiers.map((tier) => (
                       <button
                         key={tier.name}
                         onClick={() => setSelectedTier(tier.name)}
                         className={cn(
-                          "w-full p-3 rounded-xl border-2 text-left relative",
+                          "w-full p-3 rounded-xl border text-left relative transition-colors",
                           selectedTier === tier.name
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                            : isDarkMode ? "border-gray-700" : "border-gray-200"
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card"
                         )}
                       >
                         {selectedTier === tier.name && (
-                          <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
-                            <Check className="h-3 w-3 text-white" />
+                          <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                            <Check className="h-3 w-3" />
                           </div>
                         )}
                         <div className="flex justify-between items-start pr-6">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className={cn("font-semibold text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
-                                {tier.name}
-                              </span>
+                              <span className="font-semibold text-sm text-primary">{tier.name}</span>
                               {isInCart(product.id, tier.name) && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent text-primary font-semibold">
                                   {getCartQuantity(product.id, tier.name)} di keranjang
                                 </span>
                               )}
                             </div>
                             <ul className="mt-1 space-y-0.5">
                               {tier.features.slice(0, expandedFeatures ? undefined : 2).map((feature, fidx) => (
-                                <li key={fidx} className="text-xs text-gray-500 flex items-center">
-                                  <Check className="h-3 w-3 text-green-500 mr-1 flex-shrink-0" />
+                                <li key={fidx} className="text-xs text-muted-foreground flex items-center">
+                                  <Check className="h-3 w-3 text-primary mr-1 flex-shrink-0" />
                                   <span className="line-clamp-1">{feature}</span>
                                 </li>
                               ))}
                             </ul>
-                            {tier.features.length > 2 && (
-                              <button
-                                onClick={(e) => { e.stopPropagation(); setExpandedFeatures(!expandedFeatures); }}
-                                className="text-xs text-blue-500 mt-1"
-                              >
-                                {expandedFeatures ? 'Sembunyikan' : `+${tier.features.length - 2} fitur`}
-                              </button>
-                            )}
                           </div>
                           <div className="text-right">
-                            <span className="text-blue-600 font-bold text-sm">
+                            <span className="text-primary font-bold text-sm">
                               Rp {tier.price.toLocaleString('id-ID')}
                             </span>
                           </div>
@@ -373,23 +327,19 @@ export const ProductModal = memo(function ProductModal({
 
                 {/* Quantity */}
                 <div>
-                  <h4 className={cn("font-semibold mb-2 text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
-                    Jumlah
-                  </h4>
-                  <div className={cn("inline-flex items-center gap-3 px-4 py-2 rounded-xl border", isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200")}>
+                  <h4 className="font-semibold mb-2 text-sm text-primary">Jumlah</h4>
+                  <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl border border-border bg-background">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
                       disabled={quantity <= 1}
-                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center disabled:opacity-50"
+                      className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-foreground disabled:opacity-40"
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className={cn("w-8 text-center font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
-                      {quantity}
-                    </span>
+                    <span className="w-8 text-center font-bold text-primary">{quantity}</span>
                     <button
                       onClick={() => setQuantity(quantity + 1)}
-                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center"
+                      className="w-8 h-8 rounded-lg bg-card border border-border flex items-center justify-center text-foreground"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -398,25 +348,18 @@ export const ProductModal = memo(function ProductModal({
 
                 {/* Description */}
                 <div>
-                  <h4 className={cn("font-semibold mb-2 text-sm", isDarkMode ? "text-white" : "text-gray-900")}>
-                    Deskripsi
-                  </h4>
-                  <p className={cn("text-sm", isDarkMode ? "text-gray-300" : "text-gray-600")}>
-                    {product.description}
-                  </p>
+                  <h4 className="font-semibold mb-2 text-sm text-primary">Deskripsi</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
                 </div>
               </div>
             </div>
           </ScrollArea>
 
           {/* Bottom Action */}
-          <div className={cn(
-            "absolute bottom-0 left-0 right-0 p-4 border-t",
-            isDarkMode ? "bg-gray-900 border-gray-800" : "bg-white border-gray-100"
-          )}>
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-card">
             <Button
               size="lg"
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600"
+              className="w-full h-12 bg-primary hover:bg-secondary text-primary-foreground font-semibold shadow-sm transition-colors"
               onClick={handleAddToCart}
               disabled={!selectedTier || showAddedAnimation}
             >
@@ -435,21 +378,16 @@ export const ProductModal = memo(function ProductModal({
   // DESKTOP VIEW
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent 
-        className={cn(
-          "max-w-5xl w-[95vw] max-h-[90vh] overflow-hidden p-0 gap-0 border-0 rounded-2xl",
-          isDarkMode ? "bg-gray-900" : "bg-white"
-        )}
-      >
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[90vh] overflow-hidden p-0 gap-0 border-border rounded-2xl bg-card">
         <DialogTitle className="sr-only">{product.title}</DialogTitle>
         
-        <button onClick={onClose} className={cn("absolute top-4 right-4 z-50 w-10 h-10 rounded-full flex items-center justify-center", isDarkMode ? "bg-gray-800 text-white" : "bg-white shadow-lg")}>
+        <button onClick={onClose} className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full flex items-center justify-center bg-background border border-border text-foreground hover:bg-muted transition-colors">
           <X className="h-5 w-5" />
         </button>
 
         <div className="grid lg:grid-cols-2 h-[90vh]">
           {/* Left - Image */}
-          <div className={cn("relative overflow-hidden", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
+          <div className="relative overflow-hidden bg-background border-r border-border">
             <div className="relative h-full flex items-center justify-center p-8">
               <img
                 src={galleryImages[activeImageIndex]}
@@ -458,24 +396,22 @@ export const ProductModal = memo(function ProductModal({
                 loading="eager"
               />
               
-              {/* Badges */}
               <div className="absolute top-4 left-4 flex gap-2">
-                <div className="px-3 py-1.5 rounded-full text-sm font-bold bg-blue-500 text-white">
-                  <Star className="h-3.5 w-3.5 inline mr-1" />
+                <div className="px-3 py-1.5 rounded-full text-sm font-bold bg-primary text-primary-foreground flex items-center">
+                  <Star className="h-3.5 w-3.5 mr-1 fill-accent text-accent" />
                   {product.rating}
                 </div>
                 {hasDiscount && (
-                  <div className="px-3 py-1.5 rounded-full text-sm font-bold bg-red-500 text-white">
+                  <div className="px-3 py-1.5 rounded-full text-sm font-bold bg-accent text-primary">
                     -{discountPercent}%
                   </div>
                 )}
               </div>
 
-              {/* Wishlist */}
               <button
                 onClick={() => setIsWishlisted(!isWishlisted)}
-                className={cn("absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center shadow-lg", 
-                  isWishlisted ? "bg-red-500 text-white" : isDarkMode ? "bg-gray-700 text-white" : "bg-white")}
+                className={cn("absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center border border-border shadow-sm transition-colors", 
+                  isWishlisted ? "bg-accent text-primary border-accent" : "bg-card text-foreground hover:bg-muted")}
               >
                 <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
               </button>
@@ -488,8 +424,8 @@ export const ProductModal = memo(function ProductModal({
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
                   className={cn(
-                    "w-14 h-14 rounded-lg overflow-hidden border-2",
-                    activeImageIndex === idx ? "border-blue-500" : isDarkMode ? "border-gray-600" : "border-white"
+                    "w-14 h-14 rounded-lg overflow-hidden border-2 transition-all",
+                    activeImageIndex === idx ? "border-primary shadow-sm" : "border-border opacity-70 hover:opacity-100"
                   )}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" loading="lazy" />
@@ -497,15 +433,14 @@ export const ProductModal = memo(function ProductModal({
               ))}
             </div>
 
-            {/* Nav arrows */}
             {galleryImages.length > 1 && (
               <>
                 <button onClick={() => setActiveImageIndex(prev => prev > 0 ? prev - 1 : galleryImages.length - 1)} 
-                  className={cn("absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center", isDarkMode ? "bg-gray-700 text-white" : "bg-white shadow-lg")}>
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center bg-card border border-border text-foreground shadow-sm hover:bg-muted">
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button onClick={() => setActiveImageIndex(prev => prev < galleryImages.length - 1 ? prev + 1 : 0)}
-                  className={cn("absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center", isDarkMode ? "bg-gray-700 text-white" : "bg-white shadow-lg")}>
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center bg-card border border-border text-foreground shadow-sm hover:bg-muted">
                   <ChevronRight className="h-5 w-5" />
                 </button>
               </>
@@ -513,50 +448,50 @@ export const ProductModal = memo(function ProductModal({
           </div>
 
           {/* Right - Details */}
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full bg-card">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-              <div className={cn("px-6 pt-6 pb-2 border-b", isDarkMode ? "border-gray-800" : "border-gray-100")}>
+              <div className="px-6 pt-6 pb-2 border-b border-border">
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Badge variant="secondary" className={isDarkMode ? "bg-gray-800" : ""}>
-                      <ProductIcon className="h-3 w-3 mr-1" />
+                    <Badge variant="secondary" className="bg-background text-primary border-border">
+                      <ProductIcon className="h-3.5 w-3.5 mr-1" />
                       {product.category}
                     </Badge>
-                    <Badge variant="outline" className={isDarkMode ? "border-gray-700" : ""}>
-                      <Clock className="h-3 w-3 mr-1" />
+                    <Badge variant="outline" className="border-border text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 mr-1" />
                       {product.duration}
                     </Badge>
                   </div>
-                  <h2 className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>
+                  <h2 className="text-2xl font-bold text-primary">
                     {product.title}
                   </h2>
                   <div className="flex items-center gap-4 mt-2">
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                      <span className={cn("font-semibold", isDarkMode ? "text-white" : "text-gray-900")}>{product.rating}</span>
-                      <span className="text-sm text-gray-500">({product.reviews} ulasan)</span>
+                      <Star className="h-4 w-4 fill-accent text-accent" />
+                      <span className="font-semibold text-primary">{product.rating}</span>
+                      <span className="text-sm text-muted-foreground">({product.reviews} ulasan)</span>
                     </div>
-                    <span className="text-gray-300">|</span>
-                    <span className="text-sm text-gray-500">Terjual {product.reviews * 12}+</span>
+                    <span className="text-border">|</span>
+                    <span className="text-sm text-muted-foreground">Terjual {product.reviews * 12}+</span>
                   </div>
                 </div>
 
-                <TabsList className={cn("grid w-full grid-cols-3", isDarkMode ? "bg-gray-800" : "bg-gray-100")}>
-                  <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="tiers">Tier</TabsTrigger>
-                  <TabsTrigger value="details">Detail</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 bg-background border border-border">
+                  <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Overview</TabsTrigger>
+                  <TabsTrigger value="tiers" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Tier</TabsTrigger>
+                  <TabsTrigger value="details" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Detail</TabsTrigger>
                 </TabsList>
               </div>
 
               <ScrollArea className="flex-1">
                 <div className="p-6">
                   <TabsContent value="overview" className="mt-0 space-y-4">
-                    <div className={cn("p-4 rounded-xl", isDarkMode ? "bg-gray-800" : "bg-blue-50")}>
-                      <span className={cn("text-2xl font-bold", isDarkMode ? "text-white" : "text-blue-700")}>
+                    <div className="p-4 rounded-xl bg-background border border-border">
+                      <span className="text-2xl font-bold text-primary">
                         Rp {totalPrice.toLocaleString('id-ID')}
                       </span>
                     </div>
-                    <p className={cn("text-sm", isDarkMode ? "text-gray-300" : "text-gray-600")}>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {product.description}
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -565,12 +500,12 @@ export const ProductModal = memo(function ProductModal({
                           key={tier.name}
                           onClick={() => { setSelectedTier(tier.name); setActiveTab('tiers'); }}
                           className={cn(
-                            "p-3 rounded-xl border-2 text-center",
-                            selectedTier === tier.name ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : isDarkMode ? "border-gray-700" : "border-gray-200"
+                            "p-3 rounded-xl border text-center transition-colors",
+                            selectedTier === tier.name ? "border-primary bg-primary/5" : "border-border bg-card"
                           )}
                         >
-                          <span className={cn("text-xs font-medium block", isDarkMode ? "text-white" : "text-gray-900")}>{tier.name}</span>
-                          <span className="text-blue-600 font-bold text-sm">Rp {tier.price.toLocaleString('id-ID')}</span>
+                          <span className="text-xs font-medium block text-primary">{tier.name}</span>
+                          <span className="text-primary font-bold text-sm">Rp {tier.price.toLocaleString('id-ID')}</span>
                         </button>
                       ))}
                     </div>
@@ -579,19 +514,19 @@ export const ProductModal = memo(function ProductModal({
                   <TabsContent value="tiers" className="mt-0 space-y-4">
                     {hasSubcategories && (
                       <div>
-                        <h4 className={cn("font-semibold mb-2", isDarkMode ? "text-white" : "text-gray-900")}>Pilihan Paket</h4>
+                        <h4 className="font-semibold mb-2 text-primary">Pilihan Paket</h4>
                         <div className="grid grid-cols-2 gap-2">
                           {subcategories.map((sub) => (
                             <button
                               key={sub.id}
                               onClick={() => setSelectedSubcategory(sub.id)}
                               className={cn(
-                                "p-3 rounded-xl border-2 text-left",
-                                selectedSubcategory === sub.id ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : isDarkMode ? "border-gray-700" : "border-gray-200"
+                                "p-3 rounded-xl border text-left transition-colors",
+                                selectedSubcategory === sub.id ? "border-primary bg-primary/5" : "border-border bg-card"
                               )}
                             >
-                              <span className={cn("text-sm font-medium block", isDarkMode ? "text-white" : "text-gray-900")}>{sub.name}</span>
-                              <span className="text-xs text-gray-500">{sub.description}</span>
+                              <span className="text-sm font-medium block text-primary">{sub.name}</span>
+                              <span className="text-xs text-muted-foreground">{sub.description}</span>
                             </button>
                           ))}
                         </div>
@@ -599,35 +534,35 @@ export const ProductModal = memo(function ProductModal({
                     )}
 
                     <div>
-                      <h4 className={cn("font-semibold mb-2", isDarkMode ? "text-white" : "text-gray-900")}>Pilih Tier</h4>
+                      <h4 className="font-semibold mb-2 text-primary">Pilih Tier</h4>
                       <div className="space-y-2">
                         {product.tiers.map((tier) => (
                           <button
                             key={tier.name}
                             onClick={() => setSelectedTier(tier.name)}
                             className={cn(
-                              "w-full p-4 rounded-xl border-2 text-left relative",
-                              selectedTier === tier.name ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : isDarkMode ? "border-gray-700" : "border-gray-200"
+                              "w-full p-4 rounded-xl border text-left relative transition-colors",
+                              selectedTier === tier.name ? "border-primary bg-primary/5" : "border-border bg-card"
                             )}
                           >
                             {selectedTier === tier.name && (
-                              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
-                                <Check className="h-4 w-4 text-white" />
+                              <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                                <Check className="h-4 w-4" />
                               </div>
                             )}
                             <div className="flex justify-between items-start pr-8">
                               <div>
-                                <span className={cn("font-semibold block", isDarkMode ? "text-white" : "text-gray-900")}>{tier.name}</span>
+                                <span className="font-semibold block text-primary">{tier.name}</span>
                                 <ul className="mt-1 space-y-1">
                                   {tier.features.map((feature, fidx) => (
-                                    <li key={fidx} className="text-sm text-gray-500 flex items-center">
-                                      <Check className="h-3.5 w-3.5 text-green-500 mr-1.5 flex-shrink-0" />
+                                    <li key={fidx} className="text-sm text-muted-foreground flex items-center">
+                                      <Check className="h-3.5 w-3.5 text-primary mr-1.5 flex-shrink-0" />
                                       {feature}
                                     </li>
                                   ))}
                                 </ul>
                               </div>
-                              <span className="text-blue-600 font-bold text-lg">Rp {tier.price.toLocaleString('id-ID')}</span>
+                              <span className="text-primary font-bold text-lg">Rp {tier.price.toLocaleString('id-ID')}</span>
                             </div>
                           </button>
                         ))}
@@ -635,13 +570,13 @@ export const ProductModal = memo(function ProductModal({
                     </div>
 
                     <div>
-                      <h4 className={cn("font-semibold mb-2", isDarkMode ? "text-white" : "text-gray-900")}>Jumlah</h4>
-                      <div className={cn("inline-flex items-center gap-4 px-4 py-2 rounded-xl border", isDarkMode ? "border-gray-700 bg-gray-800" : "border-gray-200")}>
-                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center disabled:opacity-50">
+                      <h4 className="font-semibold mb-2 text-primary">Jumlah</h4>
+                      <div className="inline-flex items-center gap-4 px-4 py-2 rounded-xl border border-border bg-background">
+                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1} className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center text-foreground disabled:opacity-40">
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span className={cn("w-12 text-center font-bold text-lg", isDarkMode ? "text-white" : "text-gray-900")}>{quantity}</span>
-                        <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                        <span className="w-12 text-center font-bold text-lg text-primary">{quantity}</span>
+                        <button onClick={() => setQuantity(quantity + 1)} className="w-10 h-10 rounded-lg bg-card border border-border flex items-center justify-center text-foreground">
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
@@ -649,7 +584,7 @@ export const ProductModal = memo(function ProductModal({
                   </TabsContent>
 
                   <TabsContent value="details" className="mt-0 space-y-4">
-                    <div className={cn("p-4 rounded-xl", isDarkMode ? "bg-gray-800" : "bg-gray-50")}>
+                    <div className="p-4 rounded-xl bg-background border border-border">
                       <div className="grid grid-cols-2 gap-4">
                         {[
                           { icon: Shield, text: 'Garansi 100%' },
@@ -658,10 +593,10 @@ export const ProductModal = memo(function ProductModal({
                           { icon: BadgeCheck, text: 'Teknisi Profesional' },
                         ].map((badge) => (
                           <div key={badge.text} className="flex items-center gap-2">
-                            <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                              <badge.icon className="h-5 w-5 text-green-600" />
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                              <badge.icon className="h-5 w-5 text-primary" />
                             </div>
-                            <span className={cn("text-sm font-medium", isDarkMode ? "text-white" : "text-gray-900")}>{badge.text}</span>
+                            <span className="text-sm font-medium text-primary">{badge.text}</span>
                           </div>
                         ))}
                       </div>
@@ -672,20 +607,20 @@ export const ProductModal = memo(function ProductModal({
             </Tabs>
 
             {/* Bottom Actions */}
-            <div className={cn("p-6 border-t", isDarkMode ? "border-gray-800" : "border-gray-100")}>
+            <div className="p-6 border-t border-border bg-card">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
-                  <span className="text-sm text-gray-500">Total Harga</span>
-                  <span className={cn("text-2xl font-bold block", isDarkMode ? "text-white" : "text-gray-900")}>
+                  <span className="text-xs text-muted-foreground">Total Harga</span>
+                  <span className="text-2xl font-bold block text-primary">
                     Rp {totalPrice.toLocaleString('id-ID')}
                   </span>
                 </div>
-                <button onClick={handleShare} className={cn("w-12 h-12 rounded-xl flex items-center justify-center", isDarkMode ? "bg-gray-800" : "bg-gray-100")}>
+                <button onClick={handleShare} className="w-12 h-12 rounded-xl flex items-center justify-center border border-border bg-background text-foreground hover:bg-muted transition-colors">
                   <Share2 className="h-5 w-5" />
                 </button>
                 <Button
                   size="lg"
-                  className="px-8 h-12 bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600"
+                  className="px-8 h-12 bg-primary hover:bg-secondary text-primary-foreground font-semibold shadow-sm transition-colors"
                   onClick={handleAddToCart}
                   disabled={!selectedTier || showAddedAnimation}
                 >
@@ -700,14 +635,14 @@ export const ProductModal = memo(function ProductModal({
           </div>
         </div>
 
-        {/* Success Animation */}
+        {/* Success Modal Animation Overlay */}
         {showAddedAnimation && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-50">
-            <div className={cn("rounded-2xl p-8 text-center", isDarkMode ? "bg-gray-800" : "bg-white")}>
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center animate-bounce">
-                <Check className="h-10 w-10 text-green-600" />
+          <div className="absolute inset-0 flex items-center justify-center bg-primary/40 backdrop-blur-xs z-50">
+            <div className="rounded-2xl p-8 text-center bg-card border border-border shadow-soft-lg">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-accent flex items-center justify-center">
+                <Check className="h-8 w-8 text-primary" />
               </div>
-              <h3 className={cn("text-xl font-bold", isDarkMode ? "text-white" : "text-gray-900")}>Berhasil!</h3>
+              <h3 className="text-xl font-bold text-primary">Berhasil Ditambahkan!</h3>
             </div>
           </div>
         )}

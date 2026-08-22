@@ -5,7 +5,7 @@ import {
   Check, RefreshCw, Moon, Sun, BarChart3,
   Lock, Eye, EyeOff, X, Shield, FileJson, Info,
   Save, Download, Search, Clock, Star,
-  FileText, Users, ShieldAlert
+  FileText, Users, ShieldAlert, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,33 +19,35 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 import { useProducts } from '@/hooks/useProducts';
-import { OrderService, TicketService, type Order } from '@/lib/firebase-db';
+import { TicketService, ProductService, type Order } from '@/lib/db';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { AdminProducts } from '@/sections/admin/AdminProducts';
+import { AdminBulkImport } from '@/sections/admin/AdminBulkImport';
+import { AdminPayments } from '@/sections/admin/AdminPayments';
+import { AdminCustomers } from '@/sections/admin/AdminCustomers';
+import { AdminSettings } from '@/sections/admin/AdminSettings';
+import { AdminAuditLog } from '@/sections/admin/AdminAuditLog';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
-// Import new admin auth system
+// Import new admin auth system - TODO: migrate to Supabase Auth
 import {
   loginAdmin,
   logoutAdmin,
   checkPermission,
   logActivity,
-  validateSession,
-  extendSession,
   getCurrentAdmin,
+  ROLE_PERMISSIONS,
   type AdminRole,
   type AdminPermission,
   ROLE_DESCRIPTIONS,
   PERMISSION_DESCRIPTIONS,
 } from '@/lib/admin-auth';
 
-// Import security utilities
-import {
-  generateCSRFToken,
-  executeRecaptcha,
-} from '@/lib/security';
+// CSRF/session state is provided by Supabase Auth; no client-side captcha bypass is used.
+import { generateCSRFToken } from '@/lib/security';
 
 // Import products data
-import productsData from '@/data/products.json';
 
 // Local product type (matches the JSON structure)
 interface LocalProduct {
@@ -86,26 +88,27 @@ function AdminApp() {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [adminName, setAdminName] = useState('');
 
   // Check if already logged in on mount
   useEffect(() => {
-    const checkSession = () => {
-      if (validateSession()) {
-        const admin = getCurrentAdmin();
-        if (admin) {
-          setIsLoggedIn(true);
-          setAdminRole(admin.role);
-          setAdminName(admin.name);
-          extendSession();
-        }
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
+      const { data: profile } = await supabase.from('profiles')
+        .select('user_id,email,full_name,role,is_active')
+        .eq('user_id', session.user.id).maybeSingle();
+      if (profile && profile.is_active && ['moderator', 'manager', 'admin', 'super_admin'].includes(profile.role)) {
+        setIsLoggedIn(true);
+        setAdminRole(profile.role as AdminRole);
+        setAdminName(profile.full_name || profile.email);
       }
     };
 
-    checkSession();
+    void checkSession();
 
     // Initialize CSRF token
     generateCSRFToken();
@@ -114,16 +117,6 @@ function AdminApp() {
     const savedTheme = localStorage.getItem('admin_dark_mode');
     if (savedTheme === 'true') setIsDarkMode(true);
 
-    // Session extension interval
-    const interval = setInterval(() => {
-      if (validateSession()) {
-        extendSession();
-      } else {
-        handleLogout();
-      }
-    }, 5 * 60 * 1000); // Extend every 5 minutes
-
-    return () => clearInterval(interval);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -132,16 +125,6 @@ function AdminApp() {
     setIsLoading(true);
 
     try {
-      // Execute reCAPTCHA if available
-      try {
-        await executeRecaptcha('admin_login');
-      } catch {
-        // reCAPTCHA not configured, continue without it
-      }
-
-      // Simulate API delay for security
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
       const result = await loginAdmin(loginEmail, loginPassword);
 
       if (result.success && result.admin) {
@@ -160,10 +143,7 @@ function AdminApp() {
   };
 
   const handleLogout = async () => {
-    const admin = getCurrentAdmin();
-    if (admin) {
-      await logoutAdmin(admin.id);
-    }
+    await logoutAdmin();
     setIsLoggedIn(false);
     setAdminRole(null);
     setAdminName('');
@@ -180,18 +160,16 @@ function AdminApp() {
   // Permission check helper
   const hasPermission = (permission: AdminPermission): boolean => {
     if (!adminRole) return false;
-    if (adminRole === 'super_admin') return true;
-    const permissions = JSON.parse(sessionStorage.getItem('admin_permissions') || '[]');
-    return checkPermission(permissions, permission);
+    return checkPermission(ROLE_PERMISSIONS[adminRole], permission);
   };
 
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-orange-500 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-primary flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-black/20" />
         <Card className="w-full max-w-md relative z-10 shadow-2xl">
           <CardHeader className="text-center">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-600 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-soft-lg">
               <Shield className="h-10 w-10 text-white" />
             </div>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
@@ -210,7 +188,7 @@ function AdminApp() {
                 <Label>Email Admin</Label>
                 <Input
                   type="email"
-                  placeholder="admin@lumakara.com"
+                  placeholder="your-email@example.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
@@ -241,7 +219,7 @@ function AdminApp() {
               
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -270,7 +248,7 @@ function AdminApp() {
         return <DashboardContent isDarkMode={isDarkMode} />;
       case 'products':
         return hasPermission('products:view') ? (
-          <ProductsContent isDarkMode={isDarkMode} />
+          <AdminProducts />
         ) : (
           <PermissionDenied />
         );
@@ -298,6 +276,16 @@ function AdminApp() {
         ) : (
           <PermissionDenied />
         );
+      case 'bulk-import':
+        return hasPermission('products:create') ? <AdminBulkImport /> : <PermissionDenied />;
+      case 'payments':
+        return hasPermission('orders:view') ? <AdminPayments /> : <PermissionDenied />;
+      case 'customers':
+        return hasPermission('dashboard:view') ? <AdminCustomers /> : <PermissionDenied />;
+      case 'settings':
+        return hasPermission('settings:view') ? <AdminSettings /> : <PermissionDenied />;
+      case 'audit-log':
+        return <AdminAuditLog />;
       case 'activity':
         return <ActivityLogContent isDarkMode={isDarkMode} />;
       case 'documentation':
@@ -311,11 +299,16 @@ function AdminApp() {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: null },
     { id: 'products', label: 'Produk', icon: Package, permission: 'products:view' as AdminPermission },
+    { id: 'bulk-import', label: 'Import XLSX', icon: Upload, permission: 'products:create' as AdminPermission },
     { id: 'orders', label: 'Pesanan', icon: ShoppingCart, permission: 'orders:view' as AdminPermission },
+    { id: 'payments', label: 'Pembayaran', icon: DollarSign, permission: 'orders:view' as AdminPermission },
+    { id: 'customers', label: 'Pelanggan', icon: Users, permission: 'dashboard:view' as AdminPermission },
     { id: 'tickets', label: 'Tiket', icon: AlertCircle, permission: 'tickets:view' as AdminPermission },
     { id: 'analytics', label: 'Analitik', icon: BarChart3, permission: 'analytics:view' as AdminPermission },
     { id: 'admins', label: 'Admin', icon: Users, permission: 'admins:view' as AdminPermission },
     { id: 'activity', label: 'Aktivitas', icon: Clock, permission: null },
+    { id: 'audit-log', label: 'Audit Log', icon: FileText, permission: null },
+    { id: 'settings', label: 'Settings', icon: Shield, permission: 'settings:view' as AdminPermission },
     { id: 'documentation', label: 'Dokumentasi', icon: FileText, permission: null },
   ].filter(item => !item.permission || hasPermission(item.permission));
 
@@ -331,7 +324,7 @@ function AdminApp() {
       } lg:translate-x-0 lg:static border-r`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-orange-500 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
               <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -353,7 +346,7 @@ function AdminApp() {
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   activeTab === item.id
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-md'
+                    ? 'bg-primary text-primary-foreground shadow-soft-lg'
                     : isDarkMode
                       ? 'text-gray-300 hover:bg-gray-700'
                       : 'text-gray-600 hover:bg-gray-100'
@@ -414,7 +407,7 @@ function AdminApp() {
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-orange-500 rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                 <Shield className="h-4 w-4 text-white" />
               </div>
               <div className="hidden sm:block">
@@ -468,36 +461,53 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
   const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [orders, tickets] = await Promise.all([
-        OrderService.getAll(),
+      // Call PostgreSQL RPC function for aggregated statistics
+      const { data: stats, error: statsError } = await supabase.rpc('get_dashboard_statistics');
+      
+      if (statsError) throw statsError;
+
+      const [tickets] = await Promise.all([
         TicketService.getAll(),
       ]);
 
-      const totalRevenue = orders.reduce((sum, order) => sum + order.total_amount, 0);
-      const pendingOrders = orders.filter(o => o.status === 'pending').length;
-      const completedOrders = orders.filter(o => o.status === 'completed').length;
-      const todayOrders = orders.filter(o => {
-        const orderDate = new Date(o.created_at || '');
-        const today = new Date();
-        return orderDate.toDateString() === today.toDateString();
-      }).length;
+      const aggregatedStats = stats && stats.length > 0 ? stats[0] : {
+        total_orders: 0,
+        total_revenue: 0,
+        pending_orders: 0,
+        completed_orders: 0,
+        today_orders: 0,
+      };
+
       const newTickets = tickets.filter(t => t.status === 'open').length;
 
       setStats({
-        totalRevenue,
-        totalOrders: orders.length,
+        totalRevenue: Number(aggregatedStats.total_revenue),
+        totalOrders: Number(aggregatedStats.total_orders),
         totalProducts: products.length,
         totalTickets: tickets.length,
-        pendingOrders,
-        completedOrders,
-        todayOrders,
+        pendingOrders: Number(aggregatedStats.pending_orders),
+        completedOrders: Number(aggregatedStats.completed_orders),
+        todayOrders: Number(aggregatedStats.today_orders),
         newTickets,
       });
 
-      setRecentOrders(orders.slice(0, 5));
+      // Fetch recent 5 orders separately (lightweight query)
+      const { data: recentOrdersData } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      setRecentOrders((recentOrdersData || []) as Order[]);
       setLastUpdate(new Date());
 
-      // Generate chart data
+      // Generate chart data (last 7 days) — lightweight aggregation in client for chart only
+      const { data: last7DaysOrders } = await supabase
+        .from('orders')
+        .select('created_at, total_amount')
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: true });
+
       const last7Days = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i));
@@ -505,14 +515,14 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
       });
 
       const chartData = last7Days.map(date => {
-        const dayOrders = orders.filter(o => {
+        const dayOrders = (last7DaysOrders || []).filter(o => {
           const orderDate = new Date(o.created_at || '');
           return orderDate.toDateString() === date.toDateString();
         });
         return {
           name: date.toLocaleDateString('id-ID', { weekday: 'short' }),
           orders: dayOrders.length,
-          revenue: dayOrders.reduce((sum, o) => sum + o.total_amount, 0),
+          revenue: dayOrders.reduce((sum, o) => sum + (o.total_amount || 0), 0),
         };
       });
       setChartData(chartData);
@@ -532,15 +542,15 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
   }, [fetchDashboardData]);
 
   const statCards = [
-    { title: 'Total Pendapatan', value: `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`, icon: DollarSign, color: 'from-green-500 to-emerald-500', change: '+12%' },
-    { title: 'Total Pesanan', value: stats.totalOrders.toString(), icon: ShoppingCart, color: 'from-blue-500 to-cyan-500', change: '+5%' },
-    { title: 'Produk', value: stats.totalProducts.toString(), icon: Package, color: 'from-purple-500 to-violet-500', change: '0%' },
-    { title: 'Tiket Baru', value: stats.newTickets.toString(), icon: AlertCircle, color: 'from-orange-500 to-red-500', change: stats.newTickets > 0 ? '!' : '' },
+    { title: 'Total Pendapatan', value: `Rp ${stats.totalRevenue.toLocaleString('id-ID')}`, icon: DollarSign, colorClass: 'bg-success', change: '+12%' },
+    { title: 'Total Pesanan', value: stats.totalOrders.toString(), icon: ShoppingCart, colorClass: 'bg-primary', change: '+5%' },
+    { title: 'Produk', value: stats.totalProducts.toString(), icon: Package, colorClass: 'bg-secondary', change: '0%' },
+    { title: 'Tiket Baru', value: stats.newTickets.toString(), icon: AlertCircle, colorClass: 'bg-warning', change: stats.newTickets > 0 ? '!' : '' },
   ];
 
-  const bgCard = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white';
-  const textClass = isDarkMode ? 'text-white' : 'text-gray-900';
-  const subTextClass = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+  const bgCard = 'bg-card border-border';
+  const textClass = 'text-foreground';
+  const subTextClass = 'text-muted-foreground';
 
   return (
     <div className="space-y-6">
@@ -560,7 +570,7 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
         {statCards.map((stat, index) => (
           <Card key={index} className={`${bgCard} overflow-hidden hover:shadow-lg transition-shadow`}>
             <CardContent className="p-4">
-              <div className={`w-10 h-10 bg-gradient-to-r ${stat.color} rounded-lg flex items-center justify-center mb-3`}>
+              <div className={`w-10 h-10 ${stat.colorClass} rounded-lg flex items-center justify-center mb-3`}>
                 <stat.icon className="h-5 w-5 text-white" />
               </div>
               <p className={`text-2xl font-bold ${textClass}`}>{stat.value}</p>
@@ -586,11 +596,11 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
-                <XAxis dataKey="name" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
-                <YAxis stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
-                <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`, borderRadius: '8px' }} />
-                <Line type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: `1px solid hsl(var(--border))`, borderRadius: '8px' }} />
+                <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -603,10 +613,10 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#374151' : '#e5e7eb'} />
-                <XAxis dataKey="name" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
-                <YAxis stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
-                <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#fff', border: `1px solid ${isDarkMode ? '#374151' : '#e5e7eb'}`, borderRadius: '8px' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: `1px solid hsl(var(--border))`, borderRadius: '8px' }} />
                 <Bar dataKey="revenue" fill="#10B981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -663,12 +673,12 @@ function DashboardContent({ isDarkMode }: { isDarkMode: boolean }) {
 
 // ProductsContent with permission checks
 function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
+  const admin = getCurrentAdmin();
   const [products, setProducts] = useState<LocalProduct[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<LocalProduct | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const admin = getCurrentAdmin();
   
   const [formData, setFormData] = useState<Partial<LocalProduct>>({
     title: '',
@@ -687,24 +697,17 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
   });
 
   // Check permissions
-  const canCreate = admin?.role === 'super_admin' || checkPermission(
-    JSON.parse(sessionStorage.getItem('admin_permissions') || '[]'),
-    'products:create'
-  );
-  const canEdit = admin?.role === 'super_admin' || checkPermission(
-    JSON.parse(sessionStorage.getItem('admin_permissions') || '[]'),
-    'products:edit'
-  );
-  const canDelete = admin?.role === 'super_admin' || checkPermission(
-    JSON.parse(sessionStorage.getItem('admin_permissions') || '[]'),
-    'products:delete'
-  );
+  // This legacy content component is not used by the active products route.
+  // Keep its mutations disabled instead of reconstructing authority client-side.
+  const canCreate = false;
+  const canEdit = false;
+  const canDelete = false;
 
-  // Load products from JSON file
+  // Load products from Supabase.
   useEffect(() => {
     setIsLoading(true);
     try {
-      setProducts(productsData.products as LocalProduct[]);
+      ProductService.getAll().then((data) => setProducts(data as LocalProduct[]));
     } catch (error) {
       console.error('Error loading products:', error);
       toast.error('Gagal memuat data produk');
@@ -727,7 +730,7 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
       }
 
       if (editingProduct) {
-        // Update existing product
+        await ProductService.update(editingProduct.id, formData);
         const updated = products.map(p => 
           p.id === editingProduct.id 
             ? { ...p, ...formData, id: editingProduct.id } as LocalProduct
@@ -749,8 +752,9 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
         // Create new product
         const newProduct: LocalProduct = {
           ...formData as LocalProduct,
-          id: Date.now().toString(),
+          id: `prod-${crypto.randomUUID()}`,
         };
+        await ProductService.create(newProduct);
         setProducts([...products, newProduct]);
         toast.success('Produk berhasil ditambahkan!');
         
@@ -768,9 +772,7 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
       setShowProductDialog(false);
       setEditingProduct(null);
       
-      toast.info('Data disimpan sementara. Export ke JSON untuk menyimpan permanen.', {
-        duration: 5000,
-      });
+      toast.success('Perubahan produk tersimpan di Supabase.');
     } catch (error) {
       toast.error('Gagal menyimpan produk');
     }
@@ -784,6 +786,7 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
     
     if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
       const product = products.find(p => p.id === id);
+      await ProductService.delete(id);
       setProducts(products.filter(p => p.id !== id));
       toast.success('Produk berhasil dihapus!');
       
@@ -834,9 +837,9 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
     setEditingProduct(null);
   };
 
-  const bgCard = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white';
-  const textClass = isDarkMode ? 'text-white' : 'text-gray-900';
-  const subTextClass = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+  const bgCard = 'bg-card border-border';
+  const textClass = 'text-foreground';
+  const subTextClass = 'text-muted-foreground';
   const inputClass = isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : '';
 
   return (
@@ -845,7 +848,7 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <h1 className={`text-2xl font-bold ${textClass}`}>Kelola Produk</h1>
-          <p className={subTextClass}>Data produk disimpan di: src/data/products.json</p>
+          <p className={subTextClass}>Data produk disimpan di Supabase.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleExportJSON}>
@@ -873,8 +876,7 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
         <Info className="h-4 w-4 text-blue-600" />
         <AlertTitle className={textClass}>Informasi Penting</AlertTitle>
         <AlertDescription className={subTextClass}>
-          Data produk sekarang disimpan di file JSON lokal (src/data/products.json), bukan di Firestore.
-          Gunakan tombol "Export JSON" untuk menyimpan perubahan ke file, lalu salin isi file ke src/data/products.json.
+          Data produk dikelola terpusat melalui Supabase.
           Fitur upload gambar telah dihapus - gunakan URL gambar eksternal (Unsplash, dll).
         </AlertDescription>
       </Alert>
@@ -1237,11 +1239,14 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
   );
 }
 
+// Kept for backwards-compatible deep links; the active products route uses AdminProducts.
+void ProductsContent;
+
 // Admins Management Content
 function AdminsContent({ isDarkMode }: { isDarkMode: boolean }) {
-  const bgCard = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white';
-  const textClass = isDarkMode ? 'text-white' : 'text-gray-900';
-  const subTextClass = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+  const bgCard = 'bg-card border-border';
+  const textClass = 'text-foreground';
+  const subTextClass = 'text-muted-foreground';
 
   return (
     <div className="space-y-6">
@@ -1291,8 +1296,7 @@ function AdminsContent({ isDarkMode }: { isDarkMode: boolean }) {
         <AlertCircle className="h-4 w-4 text-amber-600" />
         <AlertTitle className={textClass}>Catatan Keamanan</AlertTitle>
         <AlertDescription className={subTextClass}>
-          Data admin disimpan di file JSON lokal. Untuk mengubah data admin,
-          edit file src/data/admins.json dan restart aplikasi.
+          Data admin dan role dikelola melalui Supabase Auth dan tabel profiles.
         </AlertDescription>
       </Alert>
     </div>
@@ -1300,25 +1304,30 @@ function AdminsContent({ isDarkMode }: { isDarkMode: boolean }) {
 }
 
 // Activity Log Content
-function ActivityLogContent({ isDarkMode }: { isDarkMode: boolean }) {
+function ActivityLogContent({ isDarkMode: _isDarkMode }: { isDarkMode?: boolean }) {
   const [logs, setLogs] = useState<AdminActivity[]>([]);
   const admin = getCurrentAdmin();
-  const bgCard = isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-white';
-  const textClass = isDarkMode ? 'text-white' : 'text-gray-900';
-  const subTextClass = isDarkMode ? 'text-gray-400' : 'text-gray-500';
+  const bgCard = 'bg-card border-border';
+  const textClass = 'text-foreground';
+  const subTextClass = 'text-muted-foreground';
 
   useEffect(() => {
-    const stored = localStorage.getItem('admin_activity_log');
-    if (stored) {
-      setLogs(JSON.parse(stored));
-    }
+    supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100)
+      .then(({ data }) => setLogs((data ?? []).map((log) => ({
+        id: log.id,
+        adminId: log.admin_id,
+        adminName: log.admin_email,
+        adminEmail: log.admin_email,
+        action: log.action,
+        resource: log.resource,
+        details: log.details?.description,
+        timestamp: log.created_at,
+      }))));
   }, []);
 
   const clearLogs = () => {
     if (admin?.role === 'super_admin') {
-      localStorage.removeItem('admin_activity_log');
-      setLogs([]);
-      toast.success('Log aktivitas berhasil dihapus');
+      toast.info('Audit log bersifat immutable dan tidak dapat dihapus.');
     } else {
       toast.error('Hanya super admin yang dapat menghapus log');
     }
@@ -1406,18 +1415,15 @@ function DocumentationContent({ isDarkMode }: { isDarkMode: boolean }) {
         <CardContent className="space-y-4">
           <Alert className={isDarkMode ? 'bg-amber-900/30 border-amber-800' : 'bg-amber-50 border-amber-200'}>
             <AlertCircle className="h-4 w-4 text-amber-600" />
-            <AlertTitle className={textClass}>File JSON (src/data/admins.json)</AlertTitle>
+            <AlertTitle className={textClass}>Supabase Auth + profiles</AlertTitle>
             <AlertDescription className={subTextClass}>
-              Kredensial admin disimpan dalam file JSON untuk keamanan.
+              Kredensial admin tidak disimpan di repository; autentikasi dilakukan oleh Supabase Auth.
             </AlertDescription>
           </Alert>
 
           <div className={`p-4 rounded-lg font-mono text-sm ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-            <p className="text-green-600"># File: src/data/admins.json</p>
-            <p className="text-gray-500"># Admin dengan berbagai role</p>
-            <p className="text-blue-400">super_admin: admin@lumakara.com / admin123</p>
-            <p className="text-blue-400">admin: manager@lumakara.com / manager123</p>
-            <p className="text-blue-400">moderator: moderator@lumakara.com / mod123</p>
+            <p className="text-green-600"># Source: Supabase Auth + public.profiles</p>
+            <p className="text-gray-500"># Buat dan kelola admin melalui Supabase</p>
           </div>
 
           <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
@@ -1459,8 +1465,8 @@ function DocumentationContent({ isDarkMode }: { isDarkMode: boolean }) {
               <p className={subTextClass}>Batasan percobaan login untuk mencegah brute force</p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
-              <h4 className={`font-semibold mb-2 ${textClass}`}>🤖 reCAPTCHA v3</h4>
-              <p className={subTextClass}>Proteksi bot dengan Google reCAPTCHA v3</p>
+              <h4 className={`font-semibold mb-2 ${textClass}`}>Bot protection</h4>
+              <p className={subTextClass}>Status proteksi bot harus dikonfigurasi dan diverifikasi melalui provider auth.</p>
             </div>
             <div className={`p-4 rounded-lg ${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <h4 className={`font-semibold mb-2 ${textClass}`}>🔒 CSRF Protection</h4>
@@ -1490,14 +1496,14 @@ function DocumentationContent({ isDarkMode }: { isDarkMode: boolean }) {
         <CardContent className="space-y-4">
           <Alert className={isDarkMode ? 'bg-green-900/30 border-green-800' : 'bg-green-50 border-green-200'}>
             <FileJson className="h-4 w-4 text-green-600" />
-            <AlertTitle className={textClass}>File JSON Lokal</AlertTitle>
+            <AlertTitle className={textClass}>Supabase Database</AlertTitle>
             <AlertDescription className={subTextClass}>
-              Data produk sekarang disimpan di file JSON lokal, bukan di Firestore.
+              Data produk dibaca dan ditulis melalui Supabase.
             </AlertDescription>
           </Alert>
 
           <div className={`p-4 rounded-lg font-mono text-sm ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-            <p className="text-green-600"># File: src/data/products.json</p>
+            <p className="text-green-600"># Source: Supabase products + product_tiers</p>
             <p className="text-gray-500"># Struktur data:</p>
             <p className="text-blue-400">{`{`}</p>
             <p className="text-blue-400 ml-4">{`"products": [`}</p>

@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { useProducts } from '@/hooks/useProducts';
 import { useAppStore } from '@/store/appStore';
 import { audioService } from '@/lib/audio';
-import type { Product } from '@/lib/firebase-db';
+import type { Product } from '@/lib/db';
 
 // =============================================================================
 // CONSTANTS
@@ -29,18 +29,18 @@ const categories = [
 // HELPER FUNCTIONS
 // =============================================================================
 
-function getProductLabel(product: Product, avgPrice: number): { type: string; label: string; color: string } | null {
+function getProductLabel(product: Product, avgPrice: number): { type: string; label: string } | null {
   if (product.rating >= 4.8 && product.reviews > 100) {
-    return { type: 'bestseller', label: '⭐ Best Seller', color: 'bg-yellow-500 text-white' };
+    return { type: 'bestseller', label: '⭐ Best Seller' };
   }
   if (product.base_price < avgPrice * 0.7) {
-    return { type: 'cheap', label: '💰 Termurah', color: 'bg-green-500 text-white' };
+    return { type: 'cheap', label: '💰 Termurah' };
   }
   if (product.reviews > 150) {
-    return { type: 'trending', label: '🔥 Trending', color: 'bg-orange-500 text-white' };
+    return { type: 'trending', label: '🔥 Trending' };
   }
   if (product.created_at && new Date(product.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) {
-    return { type: 'new', label: '✨ Baru', color: 'bg-blue-500 text-white' };
+    return { type: 'new', label: '✨ Baru' };
   }
   return null;
 }
@@ -50,19 +50,17 @@ function formatPrice(price: number): string {
 }
 
 // =============================================================================
-// PRODUCT CARD COMPONENT - Ultra Optimized
+// PRODUCT CARD COMPONENT
 // =============================================================================
 
 interface ProductCardProps {
   product: Product;
   avgPrice: number;
-  isDarkMode: boolean;
 }
 
 const ProductCard = memo(function ProductCard({ 
   product, 
   avgPrice,
-  isDarkMode 
 }: ProductCardProps) {
   const navigate = useNavigate();
   const { cart } = useAppStore();
@@ -75,7 +73,6 @@ const ProductCard = memo(function ProductCard({
   
   const label = useMemo(() => getProductLabel(product, avgPrice), [product, avgPrice]);
   
-  // Check if in cart
   const cartItem = useMemo(() => {
     return cart.find(item => item.productId === product.id);
   }, [cart, product.id]);
@@ -88,76 +85,69 @@ const ProductCard = memo(function ProductCard({
   return (
     <div
       onClick={handleClick}
-      className={`
-        rounded-xl shadow-sm overflow-hidden cursor-pointer
-        transform transition-transform duration-150 active:scale-95
-        hover:shadow-md
-        ${isDarkMode ? 'bg-gray-800' : 'bg-white'}
-      `}
-      style={{ willChange: 'transform', contentVisibility: 'auto' }}
+      className="rounded-xl shadow-soft border border-border bg-card overflow-hidden cursor-pointer transform transition-all duration-200 hover:-translate-y-1 hover:shadow-soft-lg hover:border-secondary group"
     >
-      {/* Image Container - Fixed aspect ratio */}
-      <div className="relative aspect-square bg-gray-100 dark:bg-gray-700">
+      {/* Image Container */}
+      <div className="relative aspect-square bg-background p-4 flex items-center justify-center">
         <img
           src={product.icon}
           alt={product.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
-          decoding="async"
         />
         
         {/* Product Label */}
         {label && (
-          <div className={`absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold ${label.color} shadow-sm`}>
+          <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent text-primary shadow-xs">
             {label.label}
           </div>
         )}
         
         {/* Discount Badge */}
         {hasDiscount && (
-          <div className="absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold bg-red-500 text-white shadow-sm">
+          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary text-primary-foreground shadow-xs">
             -{discountPercent}%
           </div>
         )}
         
         {/* Cart Badge */}
         {cartItem && (
-          <div className="absolute bottom-2 right-2 w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm">
+          <div className="absolute bottom-2 right-2 w-6 h-6 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center shadow-xs">
             {cartItem.quantity}
           </div>
         )}
         
         {/* Stock Warning */}
         {product.stock < 20 && (
-          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500 text-white shadow-sm">
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent text-primary shadow-xs">
             Stok Terbatas
           </div>
         )}
       </div>
       
       {/* Content */}
-      <div className="p-2.5">
-        <h3 className={`font-semibold text-sm truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+      <div className="p-3 bg-card border-t border-border">
+        <h3 className="font-bold text-sm truncate text-primary group-hover:text-secondary transition-colors">
           {product.title}
         </h3>
-        <p className={`text-xs line-clamp-1 mt-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <p className="text-xs line-clamp-1 mt-0.5 text-muted-foreground">
           {product.description}
         </p>
         
-        <div className="flex items-center justify-between mt-1.5">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
           <div className="flex items-baseline gap-1">
-            <span className="text-blue-600 font-bold text-sm">
+            <span className="text-primary font-bold text-sm">
               {formatPrice(price)}
             </span>
             {hasDiscount && (
-              <span className={`text-[10px] line-through ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+              <span className="text-[10px] line-through text-muted-foreground">
                 {formatPrice(product.base_price)}
               </span>
             )}
           </div>
-          <div className="flex items-center text-yellow-500 text-xs">
-            <Star className="h-3 w-3 fill-current" />
-            <span className="ml-0.5">{product.rating}</span>
+          <div className="flex items-center text-accent text-xs font-bold">
+            <Star className="h-3 w-3 fill-accent text-accent mr-0.5" />
+            <span>{product.rating}</span>
           </div>
         </div>
       </div>
@@ -166,17 +156,17 @@ const ProductCard = memo(function ProductCard({
 });
 
 // =============================================================================
-// HERO BANNER COMPONENT - Lazy Loaded
+// HERO BANNER COMPONENT
 // =============================================================================
 
 const HeroBanner = memo(function HeroBanner() {
   const [currentSlide, setCurrentSlide] = useState(0);
   
   const slides = useMemo(() => [
-    { title: 'Layanan Digital Profesional', subtitle: 'Solusi lengkap untuk kebutuhan teknologi Anda', gradient: 'from-blue-600 via-blue-500 to-cyan-400', icon: Zap },
-    { title: 'Instalasi Wi-Fi & CCTV', subtitle: 'Jaringan aman dan terpercaya', gradient: 'from-orange-500 via-orange-400 to-yellow-400', icon: Shield },
-    { title: 'Editing Kreatif', subtitle: 'Photo & video editing profesional', gradient: 'from-purple-600 via-purple-500 to-pink-400', icon: Palette },
-    { title: 'Support Teknis 24/7', subtitle: 'Tim ahli siap membantu', gradient: 'from-green-600 via-green-500 to-emerald-400', icon: Headphones },
+    { title: 'Layanan Digital Profesional', subtitle: 'Solusi lengkap untuk kebutuhan teknologi Anda', icon: Zap },
+    { title: 'Instalasi Wi-Fi & CCTV', subtitle: 'Jaringan aman, stabil, dan terpercaya', icon: Shield },
+    { title: 'Editing Kreatif', subtitle: 'Photo & video editing profesional', icon: Palette },
+    { title: 'Support Teknis 24/7', subtitle: 'Tim ahli siap membantu setiap saat', icon: Headphones },
   ], []);
 
   useEffect(() => {
@@ -187,7 +177,7 @@ const HeroBanner = memo(function HeroBanner() {
   }, [slides.length]);
 
   return (
-    <div className="relative h-40 overflow-hidden bg-gray-900">
+    <div className="relative h-44 overflow-hidden bg-primary text-primary-foreground border-b border-border shadow-soft">
       {slides.map((slide, index) => {
         const Icon = slide.icon;
         const isActive = index === currentSlide;
@@ -195,16 +185,16 @@ const HeroBanner = memo(function HeroBanner() {
         return (
           <div
             key={index}
-            className={`absolute inset-0 flex items-center justify-center bg-gradient-to-r ${slide.gradient} px-6 transition-opacity duration-500 ${
+            className={`absolute inset-0 flex items-center justify-center bg-primary px-6 transition-opacity duration-500 ${
               isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
-            <div className="text-center text-white max-w-md">
-              <div className="w-12 h-12 mx-auto mb-2 bg-white/20 rounded-full flex items-center justify-center">
-                <Icon className="h-6 w-6" />
+            <div className="text-center text-primary-foreground max-w-md">
+              <div className="w-12 h-12 mx-auto mb-2 bg-accent/20 border border-accent/40 rounded-2xl flex items-center justify-center">
+                <Icon className="h-6 w-6 text-accent" />
               </div>
-              <h2 className="text-lg font-bold">{slide.title}</h2>
-              <p className="text-white/80 mt-1 text-xs">{slide.subtitle}</p>
+              <h2 className="text-xl font-bold tracking-tight text-primary-foreground">{slide.title}</h2>
+              <p className="text-primary-foreground/80 mt-1 text-xs">{slide.subtitle}</p>
             </div>
           </div>
         );
@@ -217,7 +207,7 @@ const HeroBanner = memo(function HeroBanner() {
             key={index}
             onClick={() => setCurrentSlide(index)}
             className={`h-1.5 rounded-full transition-all ${
-              currentSlide === index ? 'bg-white w-4' : 'bg-white/50 w-1.5'
+              currentSlide === index ? 'bg-accent w-5' : 'bg-primary-foreground/40 w-1.5'
             }`}
           />
         ))}
@@ -227,19 +217,19 @@ const HeroBanner = memo(function HeroBanner() {
 });
 
 // =============================================================================
-// SKELETON LOADER - Shown immediately
+// SKELETON LOADER
 // =============================================================================
 
-function ProductSkeleton({ isDarkMode }: { isDarkMode: boolean }) {
+function ProductSkeleton() {
   return (
-    <div className={`rounded-xl overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-      <div className={`aspect-square ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} animate-pulse`} />
-      <div className="p-2.5 space-y-2">
-        <div className={`h-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded animate-pulse w-3/4`} />
-        <div className={`h-3 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded animate-pulse w-full`} />
-        <div className="flex justify-between">
-          <div className={`h-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded animate-pulse w-1/3`} />
-          <div className={`h-4 ${isDarkMode ? 'bg-gray-700' : 'bg-gray-200'} rounded animate-pulse w-1/4`} />
+    <div className="rounded-xl overflow-hidden bg-card border border-border shadow-xs">
+      <div className="aspect-square bg-muted animate-pulse" />
+      <div className="p-3 space-y-2">
+        <div className="h-4 bg-muted rounded animate-pulse w-3/4" />
+        <div className="h-3 bg-muted rounded animate-pulse w-full" />
+        <div className="flex justify-between pt-2">
+          <div className="h-4 bg-muted rounded animate-pulse w-1/3" />
+          <div className="h-4 bg-muted rounded animate-pulse w-1/4" />
         </div>
       </div>
     </div>
@@ -247,12 +237,11 @@ function ProductSkeleton({ isDarkMode }: { isDarkMode: boolean }) {
 }
 
 // =============================================================================
-// MAIN HOME SECTION COMPONENT - Optimized for Speed
+// MAIN HOME SECTION COMPONENT
 // =============================================================================
 
 export default function HomeSection() {
   const { products, isLoading } = useProducts();
-  const { isDarkMode } = useAppStore();
   
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearchQuery, setAppliedSearchQuery] = useState('');
@@ -261,19 +250,16 @@ export default function HomeSection() {
   
   const categoryScrollRef = useRef<HTMLDivElement>(null);
 
-  // Delay hero banner loading to prioritize products
   useEffect(() => {
-    const timer = setTimeout(() => setShowHero(true), 100);
+    const timer = setTimeout(() => setShowHero(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
-  // Calculate avg price once
   const avgPrice = useMemo(() => {
     if (products.length === 0) return 0;
     return products.reduce((sum, p) => sum + p.base_price, 0) / products.length;
   }, [products]);
 
-  // Apply search
   const applySearch = useCallback(() => {
     setAppliedSearchQuery(searchInput);
     audioService.playClick();
@@ -288,7 +274,6 @@ export default function HomeSection() {
     setAppliedCategory(catId);
   }, []);
 
-  // Product filtering - optimized dengan useMemo
   const filteredProducts = useMemo(() => {
     if (!products.length) return [];
     
@@ -331,18 +316,18 @@ export default function HomeSection() {
   }, [appliedCategory, appliedSearchQuery]);
 
   return (
-    <div className={`pb-20 min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      {/* Hero Banner - Loaded with delay */}
+    <div className="pb-20 min-h-screen bg-background text-foreground">
+      {/* Hero Banner */}
       {showHero && <HeroBanner />}
 
       {/* Search & Filter Bar */}
-      <div className={`sticky top-[60px] z-30 px-4 py-3 ${isDarkMode ? 'bg-gray-900/95' : 'bg-white/95'} backdrop-blur-sm shadow-sm`}>
-        <div className="flex gap-2">
+      <div className="sticky top-[56px] z-30 px-4 py-3 bg-card border-b border-border shadow-soft">
+        <div className="flex gap-2 max-w-5xl mx-auto">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari layanan..."
-              className={`pl-9 pr-10 ${isDarkMode ? 'bg-gray-800 border-gray-700 text-white' : ''}`}
+              placeholder="Cari layanan digital..."
+              className="pl-9 pr-10 bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={handleSearchKeyDown}
@@ -350,26 +335,26 @@ export default function HomeSection() {
             {searchInput && (
               <button 
                 onClick={() => { setSearchInput(''); setAppliedSearchQuery(''); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               >
-                <X className="h-4 w-4 text-gray-400" />
+                <X className="h-4 w-4" />
               </button>
             )}
           </div>
           
           <Button 
             onClick={applySearch}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4"
+            className="bg-primary hover:bg-secondary text-primary-foreground px-5 font-semibold shadow-sm transition-colors"
           >
             Cari
           </Button>
         </div>
 
         {/* Category Pills */}
-        <div className="relative mt-3">
+        <div className="relative mt-3 max-w-5xl mx-auto">
           <button
             onClick={() => scrollCategories('left')}
-            className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 shadow rounded-full flex items-center justify-center ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}`}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 shadow-soft border border-border rounded-full flex items-center justify-center bg-card text-foreground hover:bg-muted"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
@@ -386,12 +371,10 @@ export default function HomeSection() {
                   key={cat.id}
                   onClick={() => handleCategoryClick(cat.id)}
                   className={`
-                    flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors
+                    flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 border border-border
                     ${isActive
-                      ? 'bg-gradient-to-r from-blue-600 to-orange-500 text-white shadow-md'
-                      : isDarkMode
-                        ? 'bg-gray-800 text-gray-300'
-                        : 'bg-gray-100 text-gray-700'
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-background text-secondary hover:bg-muted'
                     }
                   `}
                 >
@@ -404,7 +387,7 @@ export default function HomeSection() {
           
           <button
             onClick={() => scrollCategories('right')}
-            className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 shadow rounded-full flex items-center justify-center ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-white'}`}
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 shadow-soft border border-border rounded-full flex items-center justify-center bg-card text-foreground hover:bg-muted"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
@@ -412,62 +395,58 @@ export default function HomeSection() {
 
         {/* Active Filters */}
         {activeFiltersCount > 0 && (
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
+          <div className="flex items-center gap-2 mt-2 max-w-5xl mx-auto flex-wrap">
             {appliedCategory !== 'all' && (
-              <Badge variant="secondary" className={`flex items-center gap-1 ${isDarkMode ? 'bg-gray-800' : ''}`}>
+              <Badge variant="secondary" className="flex items-center gap-1 bg-muted text-primary border-border">
                 {categories.find(c => c.id === appliedCategory)?.label}
                 <X className="h-3 w-3 cursor-pointer" onClick={() => setAppliedCategory('all')} />
               </Badge>
             )}
             {appliedSearchQuery && (
-              <Badge variant="secondary" className={`flex items-center gap-1 ${isDarkMode ? 'bg-gray-800' : ''}`}>
+              <Badge variant="secondary" className="flex items-center gap-1 bg-muted text-primary border-border">
                 "{appliedSearchQuery}"
                 <X className="h-3 w-3 cursor-pointer" onClick={() => { setAppliedSearchQuery(''); setSearchInput(''); }} />
               </Badge>
             )}
-            <button onClick={clearFilters} className="text-xs text-blue-500 hover:underline">
+            <button onClick={clearFilters} className="text-xs text-primary font-semibold hover:underline">
               Hapus semua
             </button>
           </div>
         )}
 
-        {/* Results Count */}
-        <p className={`text-xs mt-2 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+        <p className="text-xs mt-2 text-muted-foreground max-w-5xl mx-auto">
           {isLoading ? 'Memuat...' : `Menampilkan ${filteredProducts.length} produk`}
         </p>
       </div>
 
-      {/* Products Grid - Ultra Fast dengan content-visibility */}
-      <div className="px-4 py-4">
+      {/* Products Grid */}
+      <div className="px-4 py-6 max-w-5xl mx-auto">
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <ProductSkeleton key={i} isDarkMode={isDarkMode} />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <ProductSkeleton key={i} />
             ))}
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
-              <Search className={`h-6 w-6 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} />
+          <div className="text-center py-16 bg-card rounded-2xl border border-border p-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
+              <Search className="h-6 w-6" />
             </div>
-            <p className={isDarkMode ? 'text-gray-400' : 'text-gray-500'}>Tidak ada layanan yang ditemukan</p>
+            <p className="text-primary font-semibold">Tidak ada layanan yang ditemukan</p>
+            <p className="text-xs text-muted-foreground mt-1">Coba sesuaikan pencarian atau filter Anda</p>
             {activeFiltersCount > 0 && (
-              <Button variant="outline" className="mt-4" onClick={clearFilters}>
+              <Button variant="outline" className="mt-4 border-border" onClick={clearFilters}>
                 Hapus Filter
               </Button>
             )}
           </div>
         ) : (
-          <div 
-            className="grid grid-cols-2 gap-3"
-            style={{ contentVisibility: 'auto' }}
-          >
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 avgPrice={avgPrice}
-                isDarkMode={isDarkMode}
               />
             ))}
           </div>

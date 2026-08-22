@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Product, UserProfile, Order } from '@/lib/firebase-db';
-import type { AuthUser } from '@/lib/firebase';
+import type { Product, UserProfile, Order } from '@/lib/db';
+import type { AuthUser } from '@/hooks/useAuth';
 import { audioService } from '@/lib/audio';
 
 export interface CartItem {
@@ -92,9 +92,29 @@ interface AppState {
   setHasSeenTutorial: (seen: boolean) => void;
 }
 
+const initialState = {
+  user: null,
+  profile: null,
+  isAuthenticated: false,
+  products: [],
+  reviews: [],
+  cart: [],
+  orders: [],
+  currentSection: 'home',
+  isLoading: false,
+  notification: null,
+  recentlyViewed: [],
+  isDarkMode: false,
+  soundEnabled: true,
+  musicEnabled: false,
+  hasSeenWelcome: false,
+  hasSeenTutorial: false,
+};
+
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
+      ...initialState,
       // Auth
       user: null,
       profile: null,

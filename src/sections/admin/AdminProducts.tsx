@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useProducts } from '@/hooks/useProducts';
-import type { Product, Tier } from '@/lib/firebase-db';
+import type { Product, Tier } from '@/lib/db';
 
 const categories = [
   { id: 'installation', label: 'Instalasi' },

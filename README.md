@@ -16,9 +16,9 @@
 <br />
 
 <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-  <img src="https://img.shields.io/badge/Firebase-12.8.0-FFCA28?style=for-the-badge&logo=firebase&logoColor=white&labelColor=0D1117" alt="Firebase" />
+  <img src="https://img.shields.io/badge/Supabase-2.0-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white&labelColor=0D1117" alt="Supabase" />
   <img src="https://img.shields.io/badge/Zustand-5.0.11-FF9900?style=for-the-badge&logo=zustand&logoColor=white&labelColor=0D1117" alt="Zustand" />
-  <img src="https://img.shields.io/badge/Pakasir-Payment%20Gateway-00C853?style=for-the-badge&logo=stripe&logoColor=white&labelColor=0D1117" alt="Pakasir" />
+  <img src="https://img.shields.io/badge/Saweria%20%2F%20ApiNEOXR%20%2B%20Rama-Payment-2563EB?style=for-the-badge&logo=stripe&logoColor=white&labelColor=0D1117" alt="Payment" />
 </div>
 
 <br />
@@ -75,7 +75,7 @@
 
 | 🛍️ **E-Commerce** | 🔐 **Security** | 🎨 **UI/UX** |
 |:---:|:---:|:---:|
-| ✅ Product Catalog | ✅ Firebase Auth | ✅ 30+ Animations |
+| ✅ Product Catalog | ✅ Supabase Auth | ✅ 30+ Animations |
 | ✅ Shopping Cart | ✅ Role-based Admin | ✅ Dark/Light Mode |
 | ✅ Checkout Flow | ✅ Zod Validation | ✅ Skeleton Loaders |
 | ✅ Order History | ✅ XSS Protection | ✅ Error Boundaries |
@@ -167,11 +167,11 @@ npm run build
 
 <img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%" alt="Divider" />
 
-## 💳 Payment Gateway Integration (Pakasir)
+## 💳 Payment Gateway Integration (Saweria / ApiNEOXR)
 
 <div align="center">
 
-<img src="https://img.shields.io/badge/Pakasir-Payment%20Gateway-00C853?style=for-the-badge&logo=stripe&logoColor=white" alt="Pakasir" />
+<img src="https://img.shields.io/badge/Saweria%20%2F%20ApiNEOXR-Payment%20Gateway-00C853?style=for-the-badge&logo=stripe&logoColor=white" alt="Saweria / ApiNEOXR" />
 
 </div>
 
@@ -181,30 +181,17 @@ npm run build
 
 | Method | Status | Fee |
 |:---:|:---:|:---:|
-| QRIS | ✅ Available | Rp 1.000 |
-| BNI VA | ✅ Available | Rp 1.000 |
-| BRI VA | ✅ Available | Rp 1.000 |
-| Permata VA | ✅ Available | Rp 1.000 |
-| CIMB Niaga VA | ✅ Available | Rp 1.000 |
-| Maybank VA | ✅ Available | Rp 1.000 |
-| ATM Bersama VA | ✅ Available | Rp 1.000 |
-| PayPal | ✅ Available | 4.4% + $0.30 |
+| QRIS | ✅ Available | Provider-dependent |
 
 </div>
 
 ### Usage Example
 
 ```typescript
-import { PakasirPayment } from '@/lib/pakasir';
+// Payment creation is performed by the Supabase payment Edge Function.
 
-// Create payment
-const payment = await PakasirPayment.create({
-  method: 'qris', // atau 'bni_va', 'bri_va', dll
-  orderId: 'ORDER-123456',
-  amount: 150000,
-  customerName: 'John Doe',
-  customerEmail: 'john@example.com',
-});
+// Saweria / ApiNEOXR is primary; RamaShop QRIS is retryable fallback.
+// Mustika is disabled and is not part of the customer payment flow.
 
 // Response
 {

@@ -108,7 +108,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
           className
         )}
       >
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl bg-primary p-4 text-primary-foreground shadow-soft-lg border border-border">
           {/* Background pattern */}
           <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
           <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-white/10" />
@@ -166,7 +166,7 @@ export function PWAInstallPrompt({ className }: PWAInstallPromptProps) {
         className
       )}
     >
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white shadow-2xl">
+      <div className="relative overflow-hidden rounded-2xl bg-primary p-4 text-primary-foreground shadow-soft-lg border border-border">
         {/* Background pattern */}
         <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10" />
         <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-white/10" />

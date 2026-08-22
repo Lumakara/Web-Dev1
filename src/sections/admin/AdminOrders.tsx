@@ -4,8 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { OrderService } from '@/lib/firebase-db';
-import type { Order } from '@/lib/firebase-db';
+import { OrderService } from '@/lib/db';
+import type { Order } from '@/lib/db';
 
 const statusOptions = [
   { value: 'pending', label: 'Menunggu', color: 'bg-yellow-100 text-yellow-700' },

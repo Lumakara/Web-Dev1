@@ -1,4 +1,4 @@
-import { ProductService, type Product } from './firebase-db';
+import { ProductService, type Product } from './db';
 
 // ==================== KIMI AI CONFIGURATION ====================
 

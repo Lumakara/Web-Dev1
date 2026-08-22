@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useAppStore } from '@/store/appStore';
-import type { Product } from '@/lib/firebase-db';
+import type { Product } from '@/lib/db';
 
 export const useCart = () => {
   const {

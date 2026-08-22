@@ -8,11 +8,7 @@ import { TutorialModal } from '@/components/TutorialModal';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { Chatbot } from '@/components/Chatbot';
 import { SEO, SEOConfig } from '@/components/SEO';
-import { 
-  FloatingBackground, 
-  CursorTrailEffect,
-  ClickBurstEffect 
-} from '@/components/GifParticles';
+
 import { NotFound } from '@/pages/NotFound';
 import { useAppStore } from '@/store/appStore';
 import { Toaster } from '@/components/ui/sonner';
@@ -408,22 +404,8 @@ function App() {
           />
         </Suspense>
 
-        {/* GIF Style Floating Background */}
-        <FloatingBackground 
-          density="low"
-          speed="slow"
-          theme="mixed"
-        />
-
-        {/* Cursor Trail Effect */}
-        <CursorTrailEffect 
-          enabled={true}
-          emoji="✨"
-          maxTrails={15}
-        />
-
-        {/* Click Burst Effect */}
-        <ClickBurstEffect />
+        {/* Disabled: ClickBurstEffect & CursorTrailEffect cause performance issues with excessive particles.
+             Keep GifParticles component for CelebrationEffect on order success. */}
 
         {/* Header - Hidden on checkout and product detail */}
         {!hideNav && (

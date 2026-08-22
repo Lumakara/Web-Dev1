@@ -1,4 +1,4 @@
-import { StrictMode, Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -27,17 +27,15 @@ function PageLoader() {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/admin/*" element={<AdminApp />} />
-            <Route path="/*" element={<App />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
-    </ErrorBoundary>
-  </StrictMode>
+  <ErrorBoundary>
+    <BrowserRouter>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/admin/*" element={<AdminApp />} />
+          <Route path="/*" element={<App />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  </ErrorBoundary>
 );

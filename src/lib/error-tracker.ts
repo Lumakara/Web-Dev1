@@ -181,8 +181,8 @@ export const initGlobalErrorHandlers = () => {
     
     const msg = args.join(' ');
     const isImportant = 
-      msg.includes('PAKASIR') || 
-      msg.includes('Firebase') || 
+      msg.includes('PAYMENT') || 
+  msg.includes('legacy-auth-provider') || 
       msg.includes('React') ||
       msg.includes('payment') ||
       msg.includes('auth') ||

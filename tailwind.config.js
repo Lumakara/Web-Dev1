@@ -5,6 +5,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        /* HSL CSS variable references (from index.css) */
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -48,6 +49,26 @@ module.exports = {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        /* Premium Royal Blue palette direct refs */
+        royalBlue: {
+          50: "#F5F0E9",   /* Swan Wing */
+          100: "#E0C58F",  /* Quicksand */
+          500: "#30507D",  /* Sapphire */
+          600: "#112250",  /* Royal Blue */
+          900: "#0F1419",  /* Dark bg */
+        },
+        premium: {
+          primary: "#112250",    /* Royal Blue */
+          secondary: "#30507D",  /* Sapphire */
+          accent: "#E0C58F",     /* Quicksand */
+          background: "#F5F0E9", /* Swan Wing */
+          surface: "#FFFFFF",    /* White */
+          border: "#D9CBC2",     /* Shellstone */
+          footer: "#112250",     /* Footer */
+          heading: "#112250",    /* Heading */
+          body: "#30507D",       /* Body text */
+          muted: "#777777",      /* Muted text */
+        },
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",
@@ -58,6 +79,8 @@ module.exports = {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        soft: "var(--shadow-md)",
+        "soft-lg": "var(--shadow-lg)",
       },
       keyframes: {
         "accordion-down": {

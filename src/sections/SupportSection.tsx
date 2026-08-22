@@ -287,7 +287,7 @@ export function SupportSection() {
         timestamp: timestamp,
       });
       
-      // Also save to Firestore
+      // Persist ticket through Supabase.
       await submitTicket(formData);
       
       setTicketSubmitted(true);
@@ -315,10 +315,10 @@ export function SupportSection() {
   const cardBgClass = isDarkMode ? 'bg-gray-800' : 'bg-white';
 
   return (
-    <div className={`pb-20 px-4 pt-4 min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+    <div className="pb-20 px-4 pt-4 min-h-screen bg-background text-foreground">
       {/* Header */}
       <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
+        <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-3 shadow-soft">
           <HelpCircle className="h-8 w-8 text-white" />
         </div>
         <h1 className={`text-2xl font-bold ${textClass}`}>Pusat Bantuan</h1>
@@ -333,7 +333,7 @@ export function SupportSection() {
             isDarkMode ? 'bg-green-900/30 hover:bg-green-900/50' : 'bg-green-50 hover:bg-green-100'
           }`}
         >
-          <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+          <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center mb-2 shadow-soft">
             <Bot className="h-7 w-7 text-white" />
           </div>
           <span className={`text-sm font-bold ${isDarkMode ? 'text-green-400' : 'text-green-700'}`}>AI Chat</span>
@@ -346,7 +346,7 @@ export function SupportSection() {
             isDarkMode ? 'bg-blue-900/30 hover:bg-blue-900/50' : 'bg-blue-50 hover:bg-blue-100'
           }`}
         >
-          <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+          <div className="w-14 h-14 bg-secondary rounded-full flex items-center justify-center mb-2 shadow-soft">
             <Ticket className="h-7 w-7 text-white" />
           </div>
           <span className={`text-sm font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-700'}`}>Tiket</span>
@@ -360,7 +360,7 @@ export function SupportSection() {
             isDarkMode ? 'bg-orange-900/30 hover:bg-orange-900/50' : 'bg-orange-50 hover:bg-orange-100'
           }`}
         >
-          <div className="w-14 h-14 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+          <div className="w-14 h-14 bg-accent rounded-full flex items-center justify-center mb-2 shadow-soft">
             <Phone className="h-7 w-7 text-white" />
           </div>
           <span className={`text-sm font-bold ${isDarkMode ? 'text-orange-400' : 'text-orange-700'}`}>Telepon</span>
@@ -399,10 +399,10 @@ export function SupportSection() {
       </div>
 
       {/* AI Support Card */}
-      <Card className={`mb-4 overflow-hidden ${isDarkMode ? 'bg-gradient-to-r from-purple-900/50 to-blue-900/50' : 'bg-gradient-to-r from-purple-50 to-blue-50'}`}>
+      <Card className="mb-4 overflow-hidden bg-card border-border shadow-soft">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-soft">
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
@@ -411,7 +411,7 @@ export function SupportSection() {
             </div>
             <Button 
               onClick={() => { audioService.playClick(); setChatOpen(true); }}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              className="bg-primary hover:bg-secondary text-primary-foreground font-semibold shadow-sm transition-colors"
             >
               Chat Sekarang
             </Button>
@@ -420,10 +420,10 @@ export function SupportSection() {
       </Card>
 
       {/* Submit Ticket Card */}
-      <Card className={`${isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-cyan-900/50' : 'bg-gradient-to-r from-blue-50 to-cyan-50'}`}>
+      <Card className="bg-card border-border shadow-soft">
         <CardContent className="p-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center shadow-soft">
               <Mail className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
@@ -522,7 +522,7 @@ export function SupportSection() {
 
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600"
+                className="w-full bg-primary hover:bg-secondary text-primary-foreground font-semibold transition-colors"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -548,7 +548,7 @@ export function SupportSection() {
           isDarkMode ? 'bg-gray-900 border border-gray-700' : 'bg-white'
         }`}>
           {/* Chat Header */}
-          <div className="bg-gradient-to-r from-blue-600 via-purple-500 to-orange-500 text-white p-4 flex items-center justify-between">
+          <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
                 <Bot className="h-6 w-6" />
@@ -577,7 +577,7 @@ export function SupportSection() {
                   <div className={`max-w-[85%] ${msg.isUser ? 'order-2' : 'order-1'}`}>
                     {/* Avatar */}
                     {!msg.isUser && (
-                      <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mb-1">
+                      <div className="w-6 h-6 bg-secondary rounded-full flex items-center justify-center mb-1">
                         <Bot className="h-3 w-3 text-white" />
                       </div>
                     )}
@@ -662,7 +662,7 @@ export function SupportSection() {
               size="icon" 
               onClick={handleSendChat}
               disabled={!chatInput.trim() || isTyping}
-              className="bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600"
+              className="bg-primary hover:bg-secondary text-primary-foreground shadow-sm transition-colors"
             >
               <Send className="h-4 w-4" />
             </Button>

@@ -1,8 +1,3 @@
-/**
- * ULTRA RESPONSIVE CHATBOT
- * Fully optimized for mobile devices with smooth animations
- */
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   X, Send, Bot, User, 
@@ -18,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/appStore';
 import { audioService } from '@/lib/audio';
 import { sendMessage, type ChatMessage as AIMessage, AIChatbotConfig } from '@/lib/ai-chatbot';
-import type { Product } from '@/lib/firebase-db';
+import type { Product } from '@/lib/db';
 import { toast } from 'sonner';
 
 interface Message {
@@ -31,48 +26,35 @@ interface Message {
   action?: 'show_products' | 'create_order' | 'support' | 'show_wifi_packages' | 'show_panel_info';
 }
 
-// Product Card Component - Ultra Responsive
-function ProductCard({ product, onAddToCart, isDarkMode }: { 
+function ProductCard({ product, onAddToCart }: { 
   product: Product; 
   onAddToCart: (product: Product) => void;
-  isDarkMode: boolean;
 }) {
   const lowestPrice = Math.min(...product.tiers.map(t => t.price));
   
   return (
     <div
-      className={cn(
-        "rounded-xl overflow-hidden border-2 transition-all duration-300 hover:scale-[1.02] cursor-pointer active:scale-95",
-        isDarkMode 
-          ? "bg-gray-800 border-gray-700 hover:border-blue-500" 
-          : "bg-white border-gray-200 hover:border-blue-400 shadow-sm"
-      )}
+      className="rounded-xl overflow-hidden border border-border bg-card hover:border-primary transition-all duration-200 cursor-pointer active:scale-98 shadow-sm"
       onClick={() => onAddToCart(product)}
     >
       <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3">
         <img
           src={product.icon}
           alt={product.title}
-          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0"
+          className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover flex-shrink-0 bg-muted"
         />
         <div className="flex-1 min-w-0">
-          <h4 className={cn(
-            "font-semibold text-xs sm:text-sm truncate",
-            isDarkMode ? "text-white" : "text-gray-900"
-          )}>
+          <h4 className="font-semibold text-xs sm:text-sm truncate text-primary">
             {product.title}
           </h4>
-          <p className={cn(
-            "text-[10px] sm:text-xs line-clamp-1 sm:line-clamp-2 mt-0.5",
-            isDarkMode ? "text-gray-400" : "text-gray-500"
-          )}>
+          <p className="text-[10px] sm:text-xs line-clamp-1 sm:line-clamp-2 mt-0.5 text-muted-foreground">
             {product.description}
           </p>
           <div className="flex items-center justify-between mt-1 sm:mt-2">
-            <span className="text-blue-600 font-bold text-xs sm:text-sm">
+            <span className="text-primary font-bold text-xs sm:text-sm">
               Rp {lowestPrice.toLocaleString('id-ID')}
             </span>
-            <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">
+            <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 bg-background text-primary border border-border">
               {product.tiers.length} paket
             </Badge>
           </div>
@@ -82,69 +64,34 @@ function ProductCard({ product, onAddToCart, isDarkMode }: {
   );
 }
 
-// Quick Action Button - Mobile Optimized
 function QuickAction({ 
   icon: Icon, 
   label, 
   onClick, 
-  isDarkMode,
-  color = 'default'
 }: { 
   icon: React.ElementType; 
   label: string; 
   onClick: () => void;
-  isDarkMode: boolean;
-  color?: 'default' | 'blue' | 'purple' | 'green' | 'orange';
 }) {
-  const colorClasses = {
-    default: isDarkMode
-      ? "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white"
-      : "bg-gray-100 text-gray-700 hover:bg-gray-200",
-    blue: isDarkMode
-      ? "bg-blue-900/30 text-blue-400 hover:bg-blue-900/50"
-      : "bg-blue-50 text-blue-700 hover:bg-blue-100",
-    purple: isDarkMode
-      ? "bg-purple-900/30 text-purple-400 hover:bg-purple-900/50"
-      : "bg-purple-50 text-purple-700 hover:bg-purple-100",
-    green: isDarkMode
-      ? "bg-green-900/30 text-green-400 hover:bg-green-900/50"
-      : "bg-green-50 text-green-700 hover:bg-green-100",
-    orange: isDarkMode
-      ? "bg-orange-900/30 text-orange-400 hover:bg-orange-900/50"
-      : "bg-orange-50 text-orange-700 hover:bg-orange-100",
-  };
-
   return (
     <button
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium",
-        "transition-all duration-200 active:scale-95 flex-shrink-0",
-        colorClasses[color]
-      )}
+      className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 active:scale-95 flex-shrink-0 bg-background border border-border text-primary hover:bg-muted"
     >
-      <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+      <Icon className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
       <span className="whitespace-nowrap">{label}</span>
     </button>
   );
 }
 
-// Typing Indicator
-function TypingIndicator({ isDarkMode }: { isDarkMode: boolean }) {
+function TypingIndicator() {
   return (
-    <div className={cn(
-      "flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl",
-      isDarkMode ? "bg-gray-800" : "bg-gray-100",
-      "w-fit"
-    )}>
+    <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl bg-muted w-fit">
       <div className="flex gap-1">
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className={cn(
-              "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full animate-bounce",
-              isDarkMode ? "bg-blue-400" : "bg-blue-500"
-            )}
+            className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary animate-bounce"
             style={{ animationDelay: `${i * 0.15}s` }}
           />
         ))}
@@ -153,24 +100,14 @@ function TypingIndicator({ isDarkMode }: { isDarkMode: boolean }) {
   );
 }
 
-// AI Status Badge
-function AIStatusBadge({ isDarkMode }: { isDarkMode: boolean }) {
+function AIStatusBadge() {
   const hasApiKey = AIChatbotConfig.hasApiKey;
   
   return (
-    <div className={cn(
-      "flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium",
-      hasApiKey
-        ? isDarkMode
-          ? "bg-green-900/30 text-green-400"
-          : "bg-green-100 text-green-700"
-        : isDarkMode
-          ? "bg-yellow-900/30 text-yellow-400"
-          : "bg-yellow-100 text-yellow-700"
-    )}>
+    <div className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-accent text-primary">
       <div className={cn(
         "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
-        hasApiKey ? "bg-green-500 animate-pulse" : "bg-yellow-500"
+        hasApiKey ? "bg-primary animate-pulse" : "bg-muted-foreground"
       )} />
       <span className="hidden sm:inline">{hasApiKey ? 'AI Aktif' : 'AI Fallback'}</span>
       <span className="sm:hidden">{hasApiKey ? 'AI' : 'FB'}</span>
@@ -178,33 +115,8 @@ function AIStatusBadge({ isDarkMode }: { isDarkMode: boolean }) {
   );
 }
 
-/* 
-// Floating particles animation - Reserved for future use
-function FloatingParticles({ isDarkMode }: { isDarkMode: boolean }) {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {[...Array(6)].map((_, i) => (
-        <div
-          key={i}
-          className={cn(
-            "absolute w-2 h-2 rounded-full opacity-20 animate-pulse",
-            isDarkMode ? "bg-blue-400" : "bg-blue-500"
-          )}
-          style={{
-            left: `${15 + i * 15}%`,
-            top: `${20 + (i % 3) * 25}%`,
-            animationDelay: `${i * 0.5}s`,
-            animationDuration: `${2 + i * 0.5}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-*/
-
 export function Chatbot() {
-  const { isDarkMode, addToCart } = useAppStore();
+  const { addToCart } = useAppStore();
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -224,7 +136,6 @@ export function Chatbot() {
   const [aiHistory, setAiHistory] = useState<AIMessage[]>([]);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Check if mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 640);
@@ -234,7 +145,6 @@ export function Chatbot() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Prevent body scroll when chat is open on mobile
   useEffect(() => {
     if (isOpen && isMobile) {
       document.body.style.overflow = 'hidden';
@@ -246,21 +156,18 @@ export function Chatbot() {
     };
   }, [isOpen, isMobile]);
 
-  // Auto scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Focus input when opened
   useEffect(() => {
     if (isOpen && !isMinimized && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen, isMinimized]);
 
-  // Welcome message animation
   useEffect(() => {
     if (!isOpen && messages.length === 1) {
       const timer = setTimeout(() => {
@@ -285,7 +192,6 @@ export function Chatbot() {
     setIsLoading(true);
     audioService.playClick();
 
-    // Add typing indicator
     const typingId = (Date.now() + 1).toString();
     setMessages(prev => [...prev, { 
       id: typingId, 
@@ -317,7 +223,7 @@ export function Chatbot() {
 
       setMessages(prev => [...prev, assistantMessage]);
       audioService.playSuccess();
-    } catch (error) {
+    } catch {
       setMessages(prev => prev.filter(m => m.id !== typingId));
       
       setMessages(prev => [...prev, {
@@ -375,7 +281,6 @@ export function Chatbot() {
     });
   };
 
-  // Toggle chat with animation
   const toggleChat = () => {
     if (isOpen) {
       setIsOpen(false);
@@ -389,45 +294,38 @@ export function Chatbot() {
 
   return (
     <>
-      {/* Chat Toggle Button - Mobile Optimized Position */}
+      {/* Chat Toggle Button */}
       <button
         onClick={toggleChat}
         className={cn(
-          "fixed z-50 rounded-full shadow-2xl flex items-center justify-center",
-          "transition-all duration-300 active:scale-90",
+          "fixed z-50 rounded-full shadow-soft-lg flex items-center justify-center transition-all duration-300 active:scale-95",
           "w-12 h-12 sm:w-14 sm:h-14",
           isMobile ? "bottom-16 right-3" : "bottom-20 right-4",
           isOpen 
-            ? "bg-red-500 hover:bg-red-600 rotate-90" 
-            : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 hover:scale-110"
+            ? "bg-secondary text-primary-foreground rotate-90" 
+            : "bg-primary hover:bg-secondary text-primary-foreground"
         )}
-        style={{
-          boxShadow: isOpen 
-            ? '0 10px 40px -10px rgba(239, 68, 68, 0.5)' 
-            : '0 10px 40px -10px rgba(124, 58, 237, 0.5)',
-        }}
       >
         {isOpen ? (
-          <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          <X className="h-5 w-5 sm:h-6 sm:w-6" />
         ) : (
           <div className="relative">
-            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
             {hasNewMessage && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-red-500 rounded-full animate-pulse border-2 border-white" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full border-2 border-primary" />
             )}
           </div>
         )}
       </button>
 
-      {/* Chat Window - Ultra Responsive */}
+      {/* Chat Window */}
       <div
         ref={chatContainerRef}
         className={cn(
-          "fixed z-50 flex flex-col overflow-hidden transition-all duration-300 ease-out",
+          "fixed z-50 flex flex-col overflow-hidden transition-all duration-300 ease-out border border-border bg-card shadow-soft-lg",
           isMobile 
             ? "inset-x-0 bottom-0 rounded-t-2xl"
             : "bottom-24 right-4 w-[380px] lg:w-[420px] rounded-2xl",
-          isDarkMode ? "bg-gray-900" : "bg-white",
           isOpen 
             ? "opacity-100 translate-y-0 pointer-events-auto" 
             : "opacity-0 translate-y-8 pointer-events-none"
@@ -437,57 +335,45 @@ export function Chatbot() {
             ? isMobile 
               ? isMinimized ? '60px' : 'calc(100vh - 80px)'
               : isMinimized ? '60px' : 'min(600px, calc(100vh - 120px))'
-            : isMobile ? '0' : '0',
+            : '0',
           maxHeight: isMobile ? 'calc(100vh - 80px)' : '600px',
-          boxShadow: isDarkMode 
-            ? '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05)'
-            : '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05)',
         }}
       >
-        {/* Header - Sticky */}
-        <div className={cn(
-          "flex-shrink-0 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between select-none",
-          isDarkMode 
-            ? "bg-gradient-to-r from-gray-800 to-gray-900" 
-            : "bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"
-        )}>
+        {/* Header */}
+        <div className="flex-shrink-0 px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between select-none bg-primary text-primary-foreground border-b border-border">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative">
-              <div className={cn(
-                "rounded-full flex items-center justify-center",
-                isDarkMode ? "bg-gray-700" : "bg-white/20",
-                "w-8 h-8 sm:w-10 sm:h-10"
-              )}>
-                <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white/10">
+                <Bot className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
               </div>
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-green-500 rounded-full border-2 border-white animate-pulse" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-accent rounded-full border-2 border-primary" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-semibold text-white text-sm sm:text-base truncate">AI Assistant</h3>
+              <h3 className="font-semibold text-primary-foreground text-sm sm:text-base truncate">AI Assistant</h3>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <p className="text-[10px] sm:text-xs text-white/70 truncate">Powered by Kimi AI</p>
-                <AIStatusBadge isDarkMode={isDarkMode} />
+                <p className="text-[10px] sm:text-xs text-primary-foreground/70 truncate">Powered by Kimi AI</p>
+                <AIStatusBadge />
               </div>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/20 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 transition-colors"
               title={isMinimized ? "Expand" : "Minimize"}
             >
               {isMinimized ? (
-                <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                <Maximize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
               ) : (
-                <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                <Minimize2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
               )}
             </button>
             <button
               onClick={clearChat}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/20 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-white/10 transition-colors"
               title="Clear chat"
             >
-              <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+              <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary-foreground" />
             </button>
           </div>
         </div>
@@ -506,77 +392,62 @@ export function Chatbot() {
                   className={cn(
                     "flex gap-2 sm:gap-3",
                     message.role === 'user' ? "justify-end" : "justify-start",
-                    "animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    "animate-in fade-in duration-200"
                   )}
                   style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   {message.role === 'assistant' && (
-                    <div className={cn(
-                      "rounded-full flex-shrink-0 flex items-center justify-center flex-shrink-0",
-                      isDarkMode ? "bg-gray-800" : "bg-blue-100",
-                      "w-7 h-7 sm:w-8 sm:h-8"
-                    )}>
-                      <Bot className={cn("h-3.5 w-3.5 sm:h-4 sm:w-4", isDarkMode ? "text-blue-400" : "text-blue-600")} />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-muted text-primary border border-border">
+                      <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                   )}
 
                   <div className={cn("max-w-[75%] sm:max-w-[80%]", message.role === 'user' && "order-first")}>
                     {message.isTyping ? (
-                      <TypingIndicator isDarkMode={isDarkMode} />
+                      <TypingIndicator />
                     ) : (
                       <>
                         <div
                           className={cn(
-                            "px-3 sm:px-4 py-2 sm:py-3 rounded-2xl relative group",
+                            "px-3 sm:px-4 py-2 sm:py-3 rounded-2xl relative group text-xs sm:text-sm leading-relaxed",
                             message.role === 'user'
-                              ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-md"
-                              : isDarkMode
-                                ? "bg-gray-800 text-gray-100 rounded-bl-md"
-                                : "bg-gray-100 text-gray-800 rounded-bl-md"
+                              ? "bg-primary text-primary-foreground rounded-br-md font-medium"
+                              : "bg-muted text-foreground rounded-bl-md border border-border"
                           )}
                         >
-                          <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                          <p className="whitespace-pre-wrap">
                             {message.role === 'assistant' 
                               ? parseBoldText(message.content)
                               : message.content
                             }
                           </p>
                           
-                          {/* Copy button */}
                           {message.role === 'assistant' && (
                             <button
                               onClick={() => copyMessage(message.content)}
-                              className="absolute -right-7 sm:-right-8 top-1/2 -translate-y-1/2 p-1 sm:p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200 dark:hover:bg-gray-700"
+                              className="absolute -right-7 sm:-right-8 top-1/2 -translate-y-1/2 p-1 sm:p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-muted text-muted-foreground"
                             >
-                              <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-500" />
+                              <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             </button>
                           )}
                         </div>
 
-                        {/* Timestamp */}
                         <span className={cn(
-                          "text-[10px] sm:text-xs mt-1 block",
-                          isDarkMode ? "text-gray-500" : "text-gray-400",
+                          "text-[10px] sm:text-xs mt-1 block text-muted-foreground",
                           message.role === 'user' ? "text-right" : "text-left"
                         )}>
                           {message.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                         </span>
 
-                        {/* Action Buttons */}
                         {message.action === 'create_order' && (
                           <div className="mt-2">
                             <button
                               onClick={() => window.location.href = '/cart'}
-                              className={cn(
-                                "flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium",
-                                isDarkMode 
-                                  ? "bg-blue-600 text-white hover:bg-blue-700" 
-                                  : "bg-blue-500 text-white hover:bg-blue-600"
-                              )}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-secondary transition-colors"
                             >
-                              <ShoppingBag className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <ShoppingBag className="h-3 w-3" />
                               Keranjang
-                              <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <ChevronRight className="h-3 w-3" />
                             </button>
                           </div>
                         )}
@@ -585,16 +456,11 @@ export function Chatbot() {
                           <div className="mt-2">
                             <button
                               onClick={() => window.location.href = '/product/wifi'}
-                              className={cn(
-                                "flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium",
-                                isDarkMode 
-                                  ? "bg-blue-600 text-white hover:bg-blue-700" 
-                                  : "bg-blue-500 text-white hover:bg-blue-600"
-                              )}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-secondary transition-colors"
                             >
-                              <Wifi className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <Wifi className="h-3 w-3" />
                               Paket WiFi
-                              <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <ChevronRight className="h-3 w-3" />
                             </button>
                           </div>
                         )}
@@ -603,27 +469,18 @@ export function Chatbot() {
                           <div className="mt-2">
                             <button
                               onClick={() => window.location.href = '/product/panel'}
-                              className={cn(
-                                "flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium",
-                                isDarkMode 
-                                  ? "bg-purple-600 text-white hover:bg-purple-700" 
-                                  : "bg-purple-500 text-white hover:bg-purple-600"
-                              )}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary text-primary-foreground hover:bg-secondary transition-colors"
                             >
-                              <Server className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <Server className="h-3 w-3" />
                               Panel
-                              <ChevronRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <ChevronRight className="h-3 w-3" />
                             </button>
                           </div>
                         )}
 
-                        {/* Product Cards */}
                         {message.products && message.products.length > 0 && (
                           <div className="mt-2 sm:mt-3 space-y-2">
-                            <p className={cn(
-                              "text-[10px] sm:text-xs font-medium",
-                              isDarkMode ? "text-gray-400" : "text-gray-500"
-                            )}>
+                            <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">
                               Produk yang mungkin Anda cari:
                             </p>
                             {message.products.slice(0, 3).map((product) => (
@@ -631,7 +488,6 @@ export function Chatbot() {
                                 key={product.id}
                                 product={product}
                                 onAddToCart={handleAddToCart}
-                                isDarkMode={isDarkMode}
                               />
                             ))}
                           </div>
@@ -641,12 +497,8 @@ export function Chatbot() {
                   </div>
 
                   {message.role === 'user' && (
-                    <div className={cn(
-                      "rounded-full flex-shrink-0 flex items-center justify-center flex-shrink-0",
-                      isDarkMode ? "bg-gray-700" : "bg-blue-600",
-                      "w-7 h-7 sm:w-8 sm:h-8"
-                    )}>
-                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0 flex items-center justify-center bg-primary text-primary-foreground font-semibold">
+                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </div>
                   )}
                 </div>
@@ -654,57 +506,41 @@ export function Chatbot() {
             </div>
           </ScrollArea>
 
-          {/* Quick Actions - Horizontal Scroll */}
-          <div className={cn(
-            "flex-shrink-0 px-3 sm:px-4 py-2 sm:py-2.5 border-t",
-            isDarkMode ? "border-gray-800 bg-gray-900/50" : "border-gray-100 bg-gray-50"
-          )}>
+          {/* Quick Actions */}
+          <div className="flex-shrink-0 px-3 sm:px-4 py-2 border-t border-border bg-background">
             <ScrollArea className="w-full whitespace-nowrap">
               <div className="flex gap-1.5 sm:gap-2 pb-1">
                 <QuickAction
                   icon={ShoppingBag}
                   label="Produk"
                   onClick={() => handleQuickAction('Tampilkan semua produk')}
-                  isDarkMode={isDarkMode}
-                  color="blue"
                 />
                 <QuickAction
                   icon={Wifi}
                   label="WiFi"
                   onClick={() => handleQuickAction('Info paket WiFi')}
-                  isDarkMode={isDarkMode}
-                  color="blue"
                 />
                 <QuickAction
                   icon={Server}
                   label="Panel"
                   onClick={() => handleQuickAction('Info Panel Pterodactyl')}
-                  isDarkMode={isDarkMode}
-                  color="purple"
                 />
                 <QuickAction
                   icon={Camera}
                   label="CCTV"
                   onClick={() => handleQuickAction('Info CCTV')}
-                  isDarkMode={isDarkMode}
-                  color="green"
                 />
                 <QuickAction
                   icon={Code}
                   label="Website"
                   onClick={() => handleQuickAction('Jasa website development')}
-                  isDarkMode={isDarkMode}
-                  color="orange"
                 />
               </div>
             </ScrollArea>
           </div>
 
           {/* Input Area */}
-          <div className={cn(
-            "flex-shrink-0 px-3 sm:px-4 py-2.5 sm:py-3 border-t",
-            isDarkMode ? "border-gray-800 bg-gray-900" : "border-gray-200 bg-white"
-          )}>
+          <div className="flex-shrink-0 px-3 sm:px-4 py-2.5 sm:py-3 border-t border-border bg-card">
             <div className="flex gap-2">
               <Input
                 ref={inputRef}
@@ -712,22 +548,17 @@ export function Chatbot() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ketik pesan..."
-                className={cn(
-                  "flex-1 text-sm",
-                  isDarkMode 
-                    ? "bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 h-10 sm:h-11" 
-                    : "bg-gray-100 border-0 h-10 sm:h-11"
-                )}
+                className="flex-1 text-sm bg-background border-border h-10 sm:h-11 focus:ring-primary"
                 disabled={isLoading}
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
                 className={cn(
-                  "px-3 sm:px-4 transition-all duration-300 h-10 sm:h-11",
+                  "px-3 sm:px-4 transition-colors h-10 sm:h-11",
                   input.trim() && !isLoading
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                    : "bg-gray-300"
+                    ? "bg-primary hover:bg-secondary text-primary-foreground"
+                    : "bg-muted text-muted-foreground"
                 )}
               >
                 {isLoading ? (
@@ -737,16 +568,13 @@ export function Chatbot() {
                 )}
               </Button>
             </div>
-            <div className={cn(
-              "flex items-center justify-center gap-1 text-[10px] sm:text-xs mt-2",
-              isDarkMode ? "text-gray-600" : "text-gray-400"
-            )}>
-              <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+            <div className="flex items-center justify-center gap-1 text-[10px] sm:text-xs mt-2 text-muted-foreground">
+              <Zap className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
               <span>Powered by Kimi AI</span>
               {AIChatbotConfig.hasApiKey && (
                 <>
                   <span className="mx-1">•</span>
-                  <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-green-500" />
+                  <CheckCircle2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
                 </>
               )}
             </div>
@@ -757,7 +585,7 @@ export function Chatbot() {
       {/* Backdrop for mobile */}
       {isOpen && isMobile && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-primary/40 z-40 backdrop-blur-xs"
           onClick={() => setIsOpen(false)}
         />
       )}
