@@ -68,6 +68,7 @@ export function UltraSearch({ isOpen, onClose }: UltraSearchProps) {
   const [query, setQuery] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
@@ -96,10 +97,20 @@ export function UltraSearch({ isOpen, onClose }: UltraSearchProps) {
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
+      setLoadError(null);
       ProductService.getAll()
         .then(setProducts)
+        .catch((err) => {
+          console.error('[UltraSearch] Failed to load products:', err);
+          setLoadError('Gagal memuat produk. Coba tutup dan buka kembali.');
+        })
         .finally(() => setIsLoading(false));
       inputRef.current?.focus();
+    } else {
+      // Reset saat modal ditutup supaya fresh saat dibuka lagi
+      setQuery('');
+      setSelectedIndex(0);
+      setLoadError(null);
     }
   }, [isOpen]);
 
@@ -342,6 +353,10 @@ export function UltraSearch({ isOpen, onClose }: UltraSearchProps) {
             <div className="p-8 text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary mb-2" />
               <p className="text-muted-foreground">Memuat produk...</p>
+            </div>
+          ) : loadError ? (
+            <div className="p-8 text-center">
+              <p className="text-destructive text-sm">{loadError}</p>
             </div>
           ) : query ? (
             searchResults.length > 0 ? (
