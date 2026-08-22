@@ -30,6 +30,8 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 const ALLOWED_ORIGINS = [
+  "https://lumakara-store.web.id",
+  "https://www.lumakara-store.web.id",
   "https://lumakara.com",
   "https://www.lumakara.com",
 ];

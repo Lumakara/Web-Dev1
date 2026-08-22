@@ -6,6 +6,8 @@ const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 const ALLOWED_ORIGINS = [
+  "https://lumakara-store.web.id",
+  "https://www.lumakara-store.web.id",
   "https://lumakara.com",
   "https://www.lumakara.com",
 ];
