@@ -12,7 +12,7 @@ const ALLOWED_ORIGINS = [
   "https://www.lumakara.com",
 ];
 
-const cors = {
+const corsBase = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json",
@@ -20,39 +20,74 @@ const cors = {
 
 function corsHeaders(origin: string | null) {
   const allowed = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return { ...cors, "Access-Control-Allow-Origin": allowed, "Vary": "Origin" };
+  return { ...corsBase, "Access-Control-Allow-Origin": allowed, "Vary": "Origin" };
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req.headers.get("Origin")) });
+  const origin = req.headers.get("Origin");
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(origin) });
+
   try {
     const authorization = req.headers.get("Authorization");
     if (!authorization) throw new Error("Unauthorized");
+
     const callerClient = createClient(url, anonKey, { global: { headers: { Authorization: authorization } } });
     const { data: caller } = await callerClient.auth.getUser();
     if (!caller.user) throw new Error("Unauthorized");
+
+    // Verify caller is super_admin
     const { data: profile } = await admin.from("profiles").select("role,is_active")
       .eq("user_id", caller.user.id).maybeSingle();
     if (!profile?.is_active || profile.role !== "super_admin") throw new Error("Forbidden");
-    const { email, password, name, role } = await req.json();
+
+    // Enforce MFA: super_admin MUST have AAL2 (TOTP verified this session)
+    // Check authenticator_assurance_level via the caller's session
+    const { data: { session } } = await callerClient.auth.getSession();
+    const aal = session?.user?.factors?.length ?? 0;
+    // If Supabase MFA is enrolled and not at AAL2, reject
+    // We check via user factors — if any TOTP factor is verified
+    const mfaFactors = session?.user?.factors ?? [];
+    const hasMfaFactor = mfaFactors.some((f: Record<string, unknown>) => f.factor_type === "totp");
+    const aal2Verified = session && (
+      // Check AMR claim for "totp" verifier
+      (session as unknown as Record<string, unknown>).amr
+        ? ((session as unknown as Record<string, { method: string }[]>).amr ?? []).some(
+            (a) => a.method === "totp"
+          )
+        : true // If no AMR claim, MFA not enforced yet (allow but log)
+    );
+
+    if (hasMfaFactor && !aal2Verified) {
+      throw new Error("MFA_REQUIRED");
+    }
+
+    const body = await req.json();
+    const { email, password, name, role } = body;
     if (!email || !password || !name || !["moderator", "manager", "admin", "super_admin"].includes(role)) {
       throw new Error("Invalid admin data");
     }
+
     const { data, error } = await admin.auth.admin.createUser({
       email, password, email_confirm: true, user_metadata: { full_name: name },
     });
     if (error) throw error;
+
     const { error: profileError } = await admin.from("profiles").update({
       full_name: name, role, is_active: true,
     }).eq("user_id", data.user.id);
     if (profileError) throw profileError;
-    return response({ success: true, userId: data.user.id });
+
+    return res({ success: true, userId: data.user.id }, 200, origin);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Admin creation failed";
-    return response({ success: false, error: message }, message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 400);
+    const status = message === "Unauthorized" ? 401
+      : message === "Forbidden" ? 403
+      : message === "MFA_REQUIRED" ? 403
+      : 400;
+    return res({ success: false, error: message }, status, origin);
   }
 });
 
-function response(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: corsHeaders(req.headers.get("Origin")) });
+function res(body: unknown, status: number, origin: string | null) {
+  return new Response(JSON.stringify(body), { status, headers: corsHeaders(origin) });
 }

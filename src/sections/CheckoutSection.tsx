@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { ArrowLeft, Check, Clock, ExternalLink, Loader2, QrCode } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrderService } from '@/lib/db';
 import { usePayment, type PaymentResult } from '@/hooks/usePayment';
 import { useAppStore } from '@/store/appStore';
+import { supabase } from '@/lib/supabase';
+import { TurnstileWidget } from '@/components/TurnstileWidget';
 
 type CheckoutStep = 'review' | 'payment' | 'success';
 type CreatedPayment = NonNullable<PaymentResult['payment']>;
@@ -42,6 +44,43 @@ export function CheckoutSection() {
   const total = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
   const [step, setStep] = useState<CheckoutStep>('review');
   const [payment, setPayment] = useState<CreatedPayment | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const handleTurnstileToken = useCallback((token: string | null) => setTurnstileToken(token), []);
+
+  // Resume pending payment on mount — avoid creating a duplicate if user refreshes
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('payments')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data?.provider_transaction_id) return;
+        if (data.expires_at && new Date(data.expires_at).getTime() <= Date.now()) return;
+        setPayment({
+          id: data.id,
+          order_id: data.order_id,
+          provider: data.provider,
+          payment_method: data.payment_method ?? 'qris',
+          provider_transaction_id: data.provider_transaction_id,
+          amount: data.amount,
+          fee: data.fee ?? 0,
+          status: data.status,
+          qr_string: data.qr_string ?? undefined,
+          qr_image: data.qr_image ?? undefined,
+          qr_url: data.qr_url ?? undefined,
+          payment_url: data.payment_url ?? undefined,
+          reference: data.provider_transaction_id,
+          expires_at: data.expires_at ?? undefined,
+        });
+        setStep('payment');
+      });
+  // ponytail: run once on mount — user identity sufficient as dep
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   useEffect(() => {
     if (!user) navigate('/auth?redirect=/checkout', { replace: true });
@@ -87,7 +126,7 @@ export function CheckoutSection() {
           price: item.price, quantity: item.quantity, image: item.image,
         })),
       });
-      const result = await createPayment(orderId, total, 'qris');
+      const result = await createPayment(orderId, total, 'qris', turnstileToken ?? undefined);
       if (!result.success || !result.payment) throw new Error(result.error || 'Payment creation failed');
       setPayment(result.payment);
       setStep('payment');
@@ -124,6 +163,7 @@ export function CheckoutSection() {
       <div className="flex justify-between text-lg font-bold"><span>Total</span><span>{formatPrice(total)}</span></div>
     </CardContent></Card>
     <Card><CardContent className="flex items-center gap-3 p-4"><QrCode className="h-6 w-6" /><div><p className="font-medium">QRIS</p><p className="text-sm text-muted-foreground">Bayar menggunakan QRIS. Status pembayaran akan diperiksa otomatis.</p></div></CardContent></Card>
+    <TurnstileWidget onToken={handleTurnstileToken} action="login" />
     <Button className="w-full" disabled={isLoading || !items.length} onClick={() => void submitOrder()}>{isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <QrCode className="mr-2 h-4 w-4" />}Buat pembayaran QRIS</Button>
   </div></main>;
 }

@@ -43,7 +43,8 @@ export const usePayment = () => {
   const createPayment = useCallback(async (
     orderId: string,
     amount: number,
-    method: 'qris' = 'qris'
+    method: 'qris' = 'qris',
+    turnstileToken?: string,
   ): Promise<PaymentResult> => {
     setIsLoading(true);
     try {
@@ -53,6 +54,7 @@ export const usePayment = () => {
           orderId,
           amount,
           method,
+          ...(turnstileToken ? { turnstileToken } : {}),
         },
       });
 
