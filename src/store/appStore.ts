@@ -47,7 +47,7 @@ interface AppState {
 
   // Cart
   cart: CartItem[];
-  addToCart: (product: Product, tierName: string) => void;
+  addToCart: (product: Product, tierName: string, quantity?: number) => void;
   removeFromCart: (index: number) => void;
   updateQuantity: (index: number, change: number) => void;
   toggleItemSelection: (index: number) => void;
@@ -90,6 +90,10 @@ interface AppState {
   // Tutorial
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (seen: boolean) => void;
+
+  // Search Modal
+  searchOpen: boolean;
+  setSearchOpen: (open: boolean) => void;
 }
 
 const initialState = {
@@ -135,7 +139,9 @@ export const useAppStore = create<AppState>()(
 
       // Cart
       cart: [],
-      addToCart: (product, tierName) => {
+      addToCart: (product, tierName, quantity = 1) => {
+        // ponytail: quantity clamped 1-999, expand when business needs higher limits
+        const safeQty = Math.max(1, Math.min(999, Math.floor(quantity)));
         const tier = product.tiers.find((t) => t.name === tierName) || product.tiers[0];
         const { cart } = get();
         const existingIndex = cart.findIndex(
@@ -144,7 +150,7 @@ export const useAppStore = create<AppState>()(
 
         if (existingIndex >= 0) {
           const newCart = [...cart];
-          newCart[existingIndex].quantity += 1;
+          newCart[existingIndex].quantity += safeQty;
           set({ cart: newCart });
         } else {
           const newItem: CartItem = {
@@ -154,7 +160,7 @@ export const useAppStore = create<AppState>()(
             tier: tier.name,
             price: tier.price,
             image: product.icon,
-            quantity: 1,
+            quantity: safeQty,
             selected: true,
           };
           set({ cart: [...cart, newItem] });
@@ -254,6 +260,9 @@ export const useAppStore = create<AppState>()(
       // Tutorial
       hasSeenTutorial: false,
       setHasSeenTutorial: (seen) => set({ hasSeenTutorial: seen }),
+
+      searchOpen: false,
+      setSearchOpen: (open) => set({ searchOpen: open }),
     }),
     {
       name: 'layanan-digital-storage',

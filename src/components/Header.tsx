@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, ShoppingBag, User, Search, Moon, Sun, Volume2, VolumeX, HelpCircle } from 'lucide-react';
+import { Menu, ShoppingBag, User, Moon, Sun, Volume2, VolumeX, HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -10,10 +10,9 @@ import { TutorialModal } from './TutorialModal';
 
 interface HeaderProps {
   onMenuClick: () => void;
-  onSearchClick: () => void;
 }
 
-export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
+export function Header({ onMenuClick }: HeaderProps) {
   const {
     isAuthenticated,
     user,
@@ -103,15 +102,6 @@ export function Header({ onMenuClick, onSearchClick }: HeaderProps) {
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
 
-            {/* Search Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-primary-foreground hover:bg-white/20"
-              onClick={onSearchClick}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
 
             {/* Cart Button */}
             <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>

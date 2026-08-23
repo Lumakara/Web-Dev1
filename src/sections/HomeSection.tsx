@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Star, ChevronLeft, ChevronRight, 
   Sparkles, Zap, Headphones, Palette, Code, Wrench, Shield,
-  X, History
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
 import { useProducts } from '@/hooks/useProducts';
@@ -25,84 +24,20 @@ const categories = [
   { id: 'technical', label: 'Teknis', icon: Code },
 ] as const;
 
-const HISTORY_KEY = 'home_search_history';
-const MAX_HISTORY = 10;
-
 // =============================================================================
-// HELPER FUNCTIONS — ported exact from UltraSearch
+// HELPER FUNCTIONS
 // =============================================================================
 
 function getProductLabel(product: Product, avgPrice: number): { type: string; label: string } | null {
-  if (product.rating >= 4.8 && product.reviews > 100) {
-    return { type: 'bestseller', label: '⭐ Best Seller' };
-  }
-  if (product.base_price < avgPrice * 0.7) {
-    return { type: 'cheap', label: '💰 Termurah' };
-  }
-  if (product.reviews > 150) {
-    return { type: 'trending', label: '🔥 Trending' };
-  }
-  if (product.created_at && new Date(product.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) {
-    return { type: 'new', label: '✨ Baru' };
-  }
+  if (product.rating >= 4.8 && product.reviews > 100) return { type: 'bestseller', label: '⭐ Best Seller' };
+  if (product.base_price < avgPrice * 0.7) return { type: 'cheap', label: '💰 Termurah' };
+  if (product.reviews > 150) return { type: 'trending', label: '🔥 Trending' };
+  if (product.created_at && new Date(product.created_at).getTime() > Date.now() - 7 * 24 * 60 * 60 * 1000) return { type: 'new', label: '✨ Baru' };
   return null;
 }
 
 function formatPrice(price: number): string {
   return `Rp ${price.toLocaleString('id-ID')}`;
-}
-
-// Exact port from UltraSearch.tsx
-function fuzzyMatch(text: string, query: string): { match: boolean; score: number } {
-  const textLower = text.toLowerCase();
-  const queryLower = query.toLowerCase();
-  
-  if (textLower === queryLower) return { match: true, score: 100 };
-  if (textLower.includes(queryLower)) return { match: true, score: 80 };
-  
-  let queryIdx = 0;
-  let score = 0;
-  for (let i = 0; i < textLower.length && queryIdx < queryLower.length; i++) {
-    if (textLower[i] === queryLower[queryIdx]) {
-      score += 10;
-      queryIdx++;
-    }
-  }
-  
-  return { match: queryIdx === queryLower.length, score: score > 0 ? score : 0 };
-}
-
-// Exact port from UltraSearch.tsx
-function HighlightText({ text, query, className }: { text: string; query: string; className?: string }) {
-  if (!query) return <span className={className}>{text}</span>;
-  
-  const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-  
-  return (
-    <span className={className}>
-      {parts.map((part, i) => 
-        part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-accent/40 text-primary font-bold rounded px-0.5 not-italic">
-            {part}
-          </mark>
-        ) : (
-          part
-        )
-      )}
-    </span>
-  );
-}
-
-function loadHistory(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveHistory(history: string[]): void {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
 // =============================================================================
@@ -112,16 +47,9 @@ function saveHistory(history: string[]): void {
 interface ProductCardProps {
   product: Product;
   avgPrice: number;
-  query?: string;
-  selected?: boolean;
 }
 
-const ProductCard = memo(function ProductCard({ 
-  product, 
-  avgPrice,
-  query = '',
-  selected = false,
-}: ProductCardProps) {
+const ProductCard = memo(function ProductCard({ product, avgPrice }: ProductCardProps) {
   const navigate = useNavigate();
   const { cart } = useAppStore();
   
@@ -132,10 +60,7 @@ const ProductCard = memo(function ProductCard({
     : 0;
   
   const label = useMemo(() => getProductLabel(product, avgPrice), [product, avgPrice]);
-  
-  const cartItem = useMemo(() => {
-    return cart.find(item => item.productId === product.id);
-  }, [cart, product.id]);
+  const cartItem = useMemo(() => cart.find(item => item.productId === product.id), [cart, product.id]);
 
   const handleClick = useCallback(() => {
     audioService.playClick();
@@ -145,13 +70,8 @@ const ProductCard = memo(function ProductCard({
   return (
     <div
       onClick={handleClick}
-      className={`rounded-xl shadow-soft border bg-card overflow-hidden cursor-pointer transform transition-all duration-200 hover:-translate-y-1 hover:shadow-soft-lg group ${
-        selected 
-          ? 'border-primary ring-2 ring-primary/20 -translate-y-1' 
-          : 'border-border hover:border-secondary'
-      }`}
+      className="rounded-xl shadow-soft border border-border bg-card overflow-hidden cursor-pointer transform transition-all duration-200 hover:-translate-y-1 hover:shadow-soft-lg hover:border-secondary group"
     >
-      {/* Image Container */}
       <div className="relative aspect-square bg-background p-4 flex items-center justify-center">
         <img
           src={product.icon}
@@ -159,44 +79,32 @@ const ProductCard = memo(function ProductCard({
           className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
-        
-        {/* Product Label */}
         {label && (
           <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent text-primary shadow-xs">
             {label.label}
           </div>
         )}
-        
-        {/* Discount Badge */}
         {hasDiscount && (
           <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary text-primary-foreground shadow-xs">
             -{discountPercent}%
           </div>
         )}
-        
-        {/* Cart Badge */}
         {cartItem && (
           <div className="absolute bottom-2 right-2 w-6 h-6 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center shadow-xs">
             {cartItem.quantity}
           </div>
         )}
       </div>
-
-      {/* Content */}
       <div className="p-3 bg-card border-t border-border">
         <h3 className="font-bold text-sm truncate text-primary group-hover:text-secondary transition-colors">
-          <HighlightText text={product.title} query={query} />
+          {product.title}
         </h3>
-        <p className="text-xs line-clamp-1 mt-0.5 text-muted-foreground">
-          {product.description}
-        </p>
+        <p className="text-xs line-clamp-1 mt-0.5 text-muted-foreground">{product.description}</p>
         <div className="flex items-center justify-between mt-2">
           <div>
-            <span className="text-sm font-bold text-accent">
-              {formatPrice(price)}
-            </span>
+            <span className="text-sm font-bold text-accent">{formatPrice(price)}</span>
             {hasDiscount && (
-              <span className="text-[10px] line-through text-muted-foreground">
+              <span className="text-[10px] line-through text-muted-foreground ml-1">
                 {formatPrice(product.base_price)}
               </span>
             )}
@@ -237,7 +145,6 @@ const HeroBanner = memo(function HeroBanner() {
       {slides.map((slide, index) => {
         const Icon = slide.icon;
         const isActive = index === currentSlide;
-        
         return (
           <div
             key={index}
@@ -255,8 +162,6 @@ const HeroBanner = memo(function HeroBanner() {
           </div>
         );
       })}
-
-      {/* Navigation Dots */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
         {slides.map((_, index) => (
           <button
@@ -300,18 +205,13 @@ export default function HomeSection() {
   const { products, isLoading } = useProducts();
   const navigate = useNavigate();
   
-  const [searchInput, setSearchInput] = useState('');
   const [appliedCategory, setAppliedCategory] = useState('all');
   const [showHero, setShowHero] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   
   const categoryScrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowHero(true), 50);
-    setSearchHistory(loadHistory());
     return () => clearTimeout(timer);
   }, []);
 
@@ -323,95 +223,18 @@ export default function HomeSection() {
   const handleCategoryClick = useCallback((catId: string) => {
     audioService.playClick();
     setAppliedCategory(catId);
-    setSelectedIndex(0);
   }, []);
 
-  // Fuzzy filtered + scored — reactive to searchInput directly (no Enter needed)
   const filteredProducts = useMemo(() => {
     if (!products.length) return [];
-    
-    let result = products;
-    
-    if (appliedCategory !== 'all') {
-      result = result.filter(p => p.category === appliedCategory);
-    }
-    
-    const q = searchInput.trim();
-    if (!q) return result;
-    
-    // Score each product across all searchable fields
-    const scored = result.map(product => {
-      const titleMatch = fuzzyMatch(product.title, q);
-      const descMatch = fuzzyMatch(product.description, q);
-      const tagScores = product.tags.map(tag => fuzzyMatch(tag, q).score);
-      const categoryMatch = fuzzyMatch(product.category, q);
-      const tierScores = (product.tiers || []).map(t => fuzzyMatch(t.name, q).score);
-      
-      const score = 
-        titleMatch.score * 3 +
-        descMatch.score * 1.5 +
-        Math.max(0, ...tagScores) * 2 +
-        categoryMatch.score +
-        Math.max(0, ...tierScores);
-      
-      return { product, score, match: score > 0 };
-    });
-    
-    return scored
-      .filter(s => s.match)
-      .sort((a, b) => b.score - a.score)
-      .map(s => s.product);
-  }, [products, appliedCategory, searchInput]);
-
-  // Reset selectedIndex when results change
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [filteredProducts.length, searchInput]);
-
-  const addToHistory = useCallback((term: string) => {
-    const trimmed = term.trim();
-    if (!trimmed) return;
-    setSearchHistory(prev => {
-      const next = [trimmed, ...prev.filter(h => h !== trimmed)].slice(0, MAX_HISTORY);
-      saveHistory(next);
-      return next;
-    });
-  }, []);
-
-  const clearHistory = useCallback(() => {
-    setSearchHistory([]);
-    localStorage.removeItem(HISTORY_KEY);
-  }, []);
+    if (appliedCategory === 'all') return products;
+    return products.filter(p => p.category === appliedCategory);
+  }, [products, appliedCategory]);
 
   const clearFilters = useCallback(() => {
     audioService.playClick();
     setAppliedCategory('all');
-    setSearchInput('');
-    setSelectedIndex(0);
   }, []);
-
-  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (filteredProducts.length === 0) return;
-    
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex(i => Math.min(i + 1, filteredProducts.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex(i => Math.max(i - 1, 0));
-    } else if (e.key === 'Enter' && searchInput.trim()) {
-      e.preventDefault();
-      const target = filteredProducts[selectedIndex];
-      if (target) {
-        addToHistory(searchInput);
-        audioService.playClick();
-        navigate(`/product/${target.id}`);
-      }
-    } else if (e.key === 'Escape') {
-      setSearchInput('');
-      setSelectedIndex(0);
-    }
-  }, [filteredProducts, selectedIndex, searchInput, navigate, addToHistory]);
 
   const scrollCategories = useCallback((direction: 'left' | 'right') => {
     if (categoryScrollRef.current) {
@@ -422,65 +245,27 @@ export default function HomeSection() {
     }
   }, []);
 
-  const activeFiltersCount = useMemo(() => {
-    return [appliedCategory !== 'all', searchInput.trim() !== ''].filter(Boolean).length;
-  }, [appliedCategory, searchInput]);
-
-  const showHistory = searchInput === '' && searchHistory.length > 0;
+  const categoryFilterActive = appliedCategory !== 'all';
 
   return (
     <div className="pb-20 min-h-screen bg-background text-foreground">
-      {/* Hero Banner */}
       {showHero && <HeroBanner />}
 
       {/* Search & Filter Bar */}
       <div className="sticky top-[56px] z-30 px-4 py-3 bg-card border-b border-border shadow-soft">
         <div className="max-w-5xl mx-auto">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              ref={inputRef}
-              placeholder="Cari layanan digital..."
-              className="pl-9 pr-10 bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              autoComplete="off"
-              aria-label="Cari produk"
-            />
-            {searchInput && (
-              <button 
-                onClick={() => { setSearchInput(''); setSelectedIndex(0); inputRef.current?.focus(); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Hapus pencarian"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-
-          {/* Search History Pills */}
-          {showHistory && (
-            <div className="flex items-center gap-1.5 mt-2 overflow-x-auto scrollbar-hide">
-              <History className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              {searchHistory.slice(0, 6).map(term => (
-                <button
-                  key={term}
-                  onClick={() => setSearchInput(term)}
-                  className="shrink-0 px-2.5 py-1 rounded-full text-xs bg-muted text-secondary border border-border hover:border-primary hover:text-primary transition-colors whitespace-nowrap"
-                >
-                  {term}
-                </button>
-              ))}
-              <button
-                onClick={clearHistory}
-                className="shrink-0 text-xs text-destructive hover:underline ml-1 whitespace-nowrap"
-              >
-                Hapus
-              </button>
-            </div>
-          )}
+          {/* Search Trigger — opens UltraSearch modal */}
+          <button
+            onClick={() => { audioService.playClick(); navigate('/search'); }}
+            className="w-full flex items-center gap-3 pl-9 pr-4 h-9 rounded-md border border-border bg-background text-muted-foreground text-sm hover:border-primary hover:text-foreground transition-colors relative"
+            aria-label="Buka pencarian"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none" />
+            <span>Cari layanan digital...</span>
+            <kbd className="ml-auto hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+              <span>⌘</span>K
+            </kbd>
+          </button>
         </div>
 
         {/* Category Pills */}
@@ -527,20 +312,12 @@ export default function HomeSection() {
         </div>
 
         {/* Active Filters */}
-        {activeFiltersCount > 0 && (
+        {categoryFilterActive && (
           <div className="flex items-center gap-2 mt-2 max-w-5xl mx-auto flex-wrap">
-            {appliedCategory !== 'all' && (
-              <Badge variant="secondary" className="flex items-center gap-1 bg-muted text-primary border-border">
-                {categories.find(c => c.id === appliedCategory)?.label}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => setAppliedCategory('all')} />
-              </Badge>
-            )}
-            {searchInput.trim() && (
-              <Badge variant="secondary" className="flex items-center gap-1 bg-muted text-primary border-border">
-                "{searchInput}"
-                <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchInput('')} />
-              </Badge>
-            )}
+            <Badge variant="secondary" className="flex items-center gap-1 bg-muted text-primary border-border">
+              {categories.find(c => c.id === appliedCategory)?.label}
+              <X className="h-3 w-3 cursor-pointer" onClick={() => setAppliedCategory('all')} />
+            </Badge>
             <button onClick={clearFilters} className="text-xs text-primary font-semibold hover:underline">
               Hapus semua
             </button>
@@ -565,18 +342,9 @@ export default function HomeSection() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-muted text-muted-foreground">
               <Search className="h-6 w-6" />
             </div>
-            {searchInput.trim() ? (
-              <>
-                <p className="text-primary font-semibold">Tidak ada hasil untuk "{searchInput}"</p>
-                <p className="text-xs text-muted-foreground mt-1">Coba kata kunci lain atau hapus filter</p>
-              </>
-            ) : (
-              <>
-                <p className="text-primary font-semibold">Tidak ada layanan yang ditemukan</p>
-                <p className="text-xs text-muted-foreground mt-1">Coba sesuaikan filter Anda</p>
-              </>
-            )}
-            {activeFiltersCount > 0 && (
+            <p className="text-primary font-semibold">Tidak ada layanan yang ditemukan</p>
+            <p className="text-xs text-muted-foreground mt-1">Coba sesuaikan filter Anda</p>
+            {categoryFilterActive && (
               <Button variant="outline" className="mt-4 border-border" onClick={clearFilters}>
                 Hapus Filter
               </Button>
@@ -584,13 +352,11 @@ export default function HomeSection() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((product, index) => (
+            {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}
                 avgPrice={avgPrice}
-                query={searchInput}
-                selected={searchInput.trim() !== '' && index === selectedIndex}
               />
             ))}
           </div>

@@ -25,8 +25,6 @@ const SAWERIA_USER_ID = Deno.env.get("SAWERIA_USER_ID") ?? "";
 const NEOXR_BASE_URL = "https://api.neoxr.eu/api";
 const RAMA_API_KEY = Deno.env.get("RAMA_API_KEY") ?? "";
 const RAMA_BASE_URL = (Deno.env.get("RAMA_BASE_URL") ?? "https://ramashop.my.id/api/public").replace(/\/$/, "");
-// Turnstile server-side secret — never expose to frontend
-const TURNSTILE_SECRET = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -52,7 +50,7 @@ function corsHeaders(origin: string | null) {
 serve(async (req) => {
   const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req.headers.get("Origin")) });
-  if (req.method !== "POST") return failure(requestId, new PaymentError("METHOD_NOT_ALLOWED", "Method not allowed", 405));
+  if (req.method !== "POST") return failure(requestId, new PaymentError("METHOD_NOT_ALLOWED", "Method not allowed", 405), req.headers.get("Origin"));
 
   let orderId = "";
   const origin = req.headers.get("Origin");
@@ -65,18 +63,6 @@ serve(async (req) => {
     const order = await requireOwnedOrder(orderId, user.id);
 
     if (action === "create") {
-      // Turnstile server-side verification — reject bots before any DB/provider work
-      if (TURNSTILE_SECRET) {
-        const turnstileToken = String(body.turnstileToken ?? "");
-        if (!turnstileToken) {
-          throw new PaymentError("TURNSTILE_REQUIRED", "Human verification required", 400);
-        }
-        const tsOk = await verifyTurnstile(turnstileToken, req.headers.get("CF-Connecting-IP") ?? "");
-        if (!tsOk) {
-          throw new PaymentError("TURNSTILE_FAILED", "Human verification failed", 403);
-        }
-      }
-
       // Rate limit check BEFORE any provider call
       const { data: rateLimitOk, error: rateLimitErr } = await admin.rpc('check_payment_rate_limit', { p_user_id: user.id });
       if (rateLimitErr) throw rateLimitErr;
@@ -110,29 +96,6 @@ serve(async (req) => {
     return failure(requestId, normalized);
   }
 });
-
-// Cloudflare Turnstile server-side verification
-async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
-  if (!TURNSTILE_SECRET) return true; // Skip if not configured (dev mode)
-  try {
-    const body = new URLSearchParams({
-      secret: TURNSTILE_SECRET,
-      response: token,
-      ...(ip ? { remoteip: ip } : {}),
-    });
-    const res = await fetchWithTimeout(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body.toString() },
-      "turnstile",
-      10_000,
-    );
-    const data = await res.json() as Record<string, unknown>;
-    return data.success === true;
-  } catch {
-    // If Cloudflare is unreachable, fail closed
-    return false;
-  }
-}
 
 async function requireUser(req: Request) {
   const authorization = req.headers.get("Authorization");
@@ -457,33 +420,6 @@ async function applyStatus(payment: { id: string; status: string; order_id: stri
     p_provider_response: sanitizeProviderData(providerResponse), p_event_type: eventType,
   });
   if (error) throw error;
-
-  // ponytail: decrement stock only on paid; non-fatal so failed decrement logged but doesn't block order
-  if (status === "paid") {
-    const { data: items, error: itemsErr } = await admin
-      .from("order_items")
-      .select("product_id, quantity")
-      .eq("order_id", payment.order_id);
-    if (itemsErr) {
-      console.warn(JSON.stringify({ event: "stock_decrement_fetch_failed", order_id: payment.order_id, error_code: "DATABASE_ERROR" }));
-      return;
-    }
-    for (const item of items ?? []) {
-      if (!item.product_id) continue;
-      const { data: result, error: decrementErr } = await admin.rpc("decrement_product_stock", {
-        p_product_id: item.product_id,
-        p_quantity: Math.max(1, Number(item.quantity) || 1),
-      });
-      const row = Array.isArray(result) ? result[0] : result;
-      if (decrementErr || !row?.success) {
-        console.warn(JSON.stringify({
-          event: "stock_decrement_failed", order_id: payment.order_id,
-          product_id: item.product_id, message: row?.message ?? "rpc_error",
-          error_code: decrementErr?.code ?? "STOCK_ERROR",
-        }));
-      }
-    }
-  }
 }
 
 async function markCreationFailed(paymentId: string, errorCode: string) {
@@ -657,7 +593,7 @@ function normalizeError(error: unknown): PaymentError {
   return new PaymentError("UNKNOWN_PAYMENT_ERROR", "Payment gagal diproses.", 500);
 }
 
-function failure(requestId: string, error: PaymentError) {
+function failure(requestId: string, error: PaymentError, origin: string | null = null) {
   console.error(JSON.stringify({
     event: "payment_failure",
     request_id: requestId,
