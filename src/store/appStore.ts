@@ -92,8 +92,7 @@ interface AppState {
   setHasSeenTutorial: (seen: boolean) => void;
 
   // Search Modal
-  searchOpen: boolean;
-  setSearchOpen: (open: boolean) => void;
+
 }
 
 const initialState = {
@@ -260,9 +259,6 @@ export const useAppStore = create<AppState>()(
       // Tutorial
       hasSeenTutorial: false,
       setHasSeenTutorial: (seen) => set({ hasSeenTutorial: seen }),
-
-      searchOpen: false,
-      setSearchOpen: (open) => set({ searchOpen: open }),
     }),
     {
       name: 'layanan-digital-storage',
