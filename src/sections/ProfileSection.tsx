@@ -37,6 +37,7 @@ import type { Order } from '@/lib/db';
 import { Link } from 'react-router-dom';
 import { audioService } from '@/lib/audio';
 import { toast } from 'sonner';
+import { BadgeDisplay } from './components/BadgeDisplay';
 
 export function ProfileSection() {
   const { 
@@ -258,12 +259,6 @@ export function ProfileSection() {
         }`}
         style={{ transitionDelay: '50ms' }}
       >
-        {/* Animated Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute -right-10 -top-10 w-40 h-40 bg-white rounded-full animate-pulse" />
-          <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-white rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-        </div>
-        
         <div className="relative flex items-center gap-4">
           <div className="relative group">
             <Avatar className="w-20 h-20 border-4 border-white shadow-xl transition-transform duration-300 group-hover:scale-105">
@@ -335,6 +330,9 @@ export function ProfileSection() {
           </div>
         ))}
       </div>
+
+      {/* Badges */}
+      <BadgeDisplay />
 
       {/* Website Settings Card */}
       <div 
@@ -622,6 +620,8 @@ export function ProfileSection() {
 }
 
 function OrderCard({ order }: { order: Order }) {
+  const [expanded, setExpanded] = useState(false);
+
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700 border-yellow-200',
     paid: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -640,7 +640,10 @@ function OrderCard({ order }: { order: Order }) {
 
   return (
     <div className="transform transition-all duration-300 hover:scale-[1.02]">
-      <Card className="hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500">
+      <Card
+        className="hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500"
+        onClick={() => setExpanded(e => !e)}
+      >
         <CardContent className="p-4">
           <div className="flex justify-between items-start mb-2">
             <div>
@@ -653,19 +656,22 @@ function OrderCard({ order }: { order: Order }) {
                 }) : '-'}
               </p>
             </div>
-            <span className={`text-xs px-2 py-1 rounded-full border ${statusColors[order.status]}`}>
-              {statusLabels[order.status]}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className={`text-xs px-2 py-1 rounded-full border ${statusColors[order.status]}`}>
+                {statusLabels[order.status]}
+              </span>
+              <ChevronRight className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
+            </div>
           </div>
           
           <div className="space-y-1 mb-3">
-            {order.items.slice(0, 2).map((item, idx) => (
+            {order.items.slice(0, expanded ? undefined : 2).map((item, idx) => (
               <p key={idx} className="text-sm text-gray-600 truncate">
                 {item.title} ({item.tier}) x{item.quantity}
               </p>
             ))}
-            {order.items.length > 2 && (
-              <p className="text-xs text-gray-500">+{order.items.length - 2} item lainnya</p>
+            {!expanded && order.items.length > 2 && (
+              <p className="text-xs text-gray-500">+{order.items.length - 2} item lainnya — klik untuk lihat semua</p>
             )}
           </div>
           
@@ -675,6 +681,14 @@ function OrderCard({ order }: { order: Order }) {
               Rp {order.total_amount.toLocaleString('id-ID')}
             </p>
           </div>
+
+          {/* Detail expand */}
+          {expanded && (
+            <div className="mt-3 pt-3 border-t space-y-1 text-xs text-gray-500">
+              <p>ID Pesanan: <span className="font-mono text-gray-700">{order.id}</span></p>
+              <p>Metode Bayar: <span className="capitalize">{order.payment_method || '-'}</span></p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,5 @@
-import { X, Home, ShoppingBag, User, Headphones, LogOut, Shield } from 'lucide-react';
+import { X, Home, ShoppingBag, User, Headphones, LogOut, Shield, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAppStore } from '@/store/appStore';
@@ -21,6 +22,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [openMenus, setOpenMenus] = useState<string[]>([]);
+
+  // Lock body scroll when sidebar is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
 
   // Initialize audio on first user interaction
   useEffect(() => {
@@ -45,10 +57,47 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   };
 
   const navItems = [
-    { id: 'home', label: 'Beranda', icon: Home, path: '/' },
-    { id: 'cart', label: 'Keranjang', icon: ShoppingBag, path: '/cart' },
-    { id: 'support', label: 'Bantuan', icon: Headphones, path: '/support' },
-    { id: 'profile', label: 'Profil Saya', icon: User, path: '/profile' },
+    { 
+      id: 'home', 
+      label: 'Beranda', 
+      icon: Home,
+      children: [
+        { id: 'all', label: 'Semua Produk', path: '/', authRequired: false },
+        { id: 'installation', label: 'Instalasi', path: '/?category=installation', authRequired: false },
+        { id: 'creative', label: 'Kreatif', path: '/?category=creative', authRequired: false },
+        { id: 'technical', label: 'Teknis', path: '/?category=technical', authRequired: false },
+      ]
+    },
+    { 
+      id: 'cart', 
+      label: 'Keranjang', 
+      icon: ShoppingBag,
+      children: [
+        { id: 'cart-active', label: 'Keranjang Aktif', path: '/cart', authRequired: true },
+        { id: 'wishlist', label: 'Wishlist', path: '/wishlist', authRequired: true },
+        { id: 'orders', label: 'Riwayat Pesanan', path: '/profile?tab=orders', authRequired: true },
+      ]
+    },
+    { 
+      id: 'support', 
+      label: 'Bantuan', 
+      icon: Headphones,
+      children: [
+        { id: 'faq', label: 'FAQ', path: '/support?tab=faq', authRequired: false },
+        { id: 'new-ticket', label: 'Buat Ticket', path: '/support', authRequired: true },
+        { id: 'ticket-history', label: 'Riwayat Ticket', path: '/support?tab=history', authRequired: true },
+      ]
+    },
+    { 
+      id: 'profile', 
+      label: 'Profil Saya', 
+      icon: User,
+      children: [
+        { id: 'profile-edit', label: 'Edit Profil', path: '/profile', authRequired: true },
+        { id: 'settings', label: 'Pengaturan', path: '/profile?tab=settings', authRequired: true },
+        { id: 'logout', label: 'Keluar', path: '#logout', authRequired: true },
+      ]
+    },
   ];
 
   return (
@@ -56,15 +105,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Overlay with subtle backdrop filter */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-primary/40 backdrop-blur-sm z-50 transition-opacity duration-300"
+          className="fixed inset-0 bg-primary/40 backdrop-blur-sm z-[90] transition-opacity duration-300"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar with Royal Blue Theme */}
       <aside 
-        className={`fixed top-0 left-0 h-full w-72 bg-card text-foreground z-50 shadow-soft-lg transform transition-all duration-300 ease-out border-r border-border ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-0 left-0 h-full w-72 bg-card text-foreground shadow-soft-lg transform transition-all duration-300 ease-out border-r border-border ${
+          isOpen ? 'translate-x-0 z-[100]' : '-translate-x-full z-50'
         }`}
       >
         {/* Header */}
@@ -113,23 +162,64 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
 
         {/* Navigation */}
-        <nav className="p-3 space-y-1">
+        <nav className="p-3 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           <p className="text-xs font-bold uppercase tracking-wider mb-2 px-3 text-muted-foreground">Menu</p>
           {navItems.map((item) => {
             const Icon = item.icon;
-            return (
-              <Link
-                key={item.id}
-                to={item.path}
-                onClick={handleNavClick}
-                className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-muted transition-all duration-200 text-left group text-secondary hover:text-primary"
-              >
-                <div className="p-2 rounded-lg bg-background group-hover:bg-card transition-colors">
-                  <Icon className="h-5 w-5 text-secondary group-hover:text-primary transition-colors" />
+            const hasChildren = 'children' in item && item.children;
+            const isOpen = openMenus.includes(item.id);
+
+            if (hasChildren) {
+              return (
+                <div key={item.id}>
+                  <button
+                    onClick={() => setOpenMenus(prev => 
+                      prev.includes(item.id) ? prev.filter(m => m !== item.id) : [...prev, item.id]
+                    )}
+                    className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-muted transition-all duration-200 text-left group text-secondary hover:text-primary"
+                  >
+                    <div className="p-2 rounded-lg bg-background group-hover:bg-card transition-colors">
+                      <Icon className="h-5 w-5 text-secondary group-hover:text-primary transition-colors" />
+                    </div>
+                    <span className="font-medium text-sm flex-1">{item.label}</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="ml-6 mt-1 space-y-1 max-h-64 overflow-y-auto">
+                      {item.children.map((child) => {
+                        const needsAuth = child.authRequired && !isAuthenticated;
+                        
+                        if (child.id === 'logout') {
+                          return (
+                            <button
+                              key={child.id}
+                              onClick={handleLogout}
+                              className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors text-sm text-muted-foreground hover:text-destructive w-full text-left"
+                            >
+                              {child.label}
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <Link
+                            key={child.id}
+                            to={needsAuth ? '/auth' : child.path}
+                            onClick={handleNavClick}
+                            className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors text-sm text-muted-foreground hover:text-primary"
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <span className="font-medium text-sm">{item.label}</span>
-              </Link>
-            );
+              );
+            }
+
+            // Parent menu with children already rendered above (collapsible block)
+            return null;
           })}
           
           {/* Admin Link */}

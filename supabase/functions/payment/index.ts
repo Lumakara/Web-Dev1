@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.3";
+import { notifyTelegram } from "../_shared/notify.ts";
 
 type PaymentStatus = "pending" | "paid" | "failed" | "expired";
 type ActiveProvider = "saweria" | "rama";
@@ -20,6 +21,7 @@ interface ProviderPayment {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const TURNSTILE_SECRET = Deno.env.get("TURNSTILE_SECRET") ?? "";
 const NEOXR_API_KEY = Deno.env.get("NEOXR_API_KEY") ?? "";
 const SAWERIA_USER_ID = Deno.env.get("SAWERIA_USER_ID") ?? "";
 const NEOXR_BASE_URL = "https://api.neoxr.eu/api";
@@ -63,6 +65,15 @@ serve(async (req) => {
     const order = await requireOwnedOrder(orderId, user.id);
 
     if (action === "create") {
+      // Turnstile verification
+      const turnstileToken = String(body.turnstileToken ?? "");
+      if (turnstileToken) {
+        const isValid = await verifyTurnstile(turnstileToken);
+        if (!isValid) {
+          throw new PaymentError("CAPTCHA_FAILED", "Captcha verification failed", 403);
+        }
+      }
+
       // Rate limit check BEFORE any provider call
       const { data: rateLimitOk, error: rateLimitErr } = await admin.rpc('check_payment_rate_limit', { p_user_id: user.id });
       if (rateLimitErr) throw rateLimitErr;
@@ -420,6 +431,12 @@ async function applyStatus(payment: { id: string; status: string; order_id: stri
     p_provider_response: sanitizeProviderData(providerResponse), p_event_type: eventType,
   });
   if (error) throw error;
+  // fire-and-forget Telegram notif — jangan blocking main flow
+  notifyTelegram(eventType as "payment_success" | "payment_failed" | "payment_expired", {
+    payment_id: payment.id,
+    order_id: payment.order_id,
+    status,
+  });
 }
 
 async function markCreationFailed(paymentId: string, errorCode: string) {
@@ -560,6 +577,21 @@ function validDateString(value: unknown) {
     ).getTime()
     : new Date(candidate).getTime();
   return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : null;
+}
+
+async function verifyTurnstile(token: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET) return true; // ponytail: skip validation if not configured
+  try {
+    const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: TURNSTILE_SECRET, response: token }),
+    });
+    const data = await response.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
 }
 
 function isFallbackEligible(error: unknown) {

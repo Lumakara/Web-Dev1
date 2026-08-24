@@ -1,15 +1,19 @@
-import { useState, useEffect, lazy, Suspense, useCallback } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { BottomNav } from '@/components/BottomNav';
 import { Sidebar } from '@/components/Sidebar';
-import { WelcomeModal } from '@/components/WelcomeModal';
-import { TutorialModal } from '@/components/TutorialModal';
+import { BrandIntro } from '@/components/BrandIntro';
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt';
 import { Chatbot } from '@/components/Chatbot';
+import { FlashSaleBanner } from '@/components/FlashSaleBanner';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { SEO, SEOConfig } from '@/components/SEO';
+import { IntroSplash } from '@/components/IntroSplash';
+import { WelcomeModal } from '@/components/WelcomeModal';
 
 import { NotFound } from '@/pages/NotFound';
+import { SessionExpired } from '@/pages/SessionExpired';
 import { useAppStore } from '@/store/appStore';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
@@ -20,6 +24,7 @@ import {
   isOnline,
   getDisplayMode 
 } from '@/lib/pwa';
+import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { Wifi, WifiOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import './App.css';
@@ -39,7 +44,6 @@ const CheckoutSection = lazy(() => import('@/sections/CheckoutSection'));
 
 // Non-critical components loaded lazily
 const SearchSection = lazy(() => import('@/sections/SearchSection'));
-const ParticleBackground = lazy(() => import('@/components/ParticleBackground'));
 
 // =============================================================================
 // LOADING COMPONENTS
@@ -209,15 +213,16 @@ function App() {
     setNotification, 
     isDarkMode, 
     soundEnabled, 
-    hasSeenTutorial, 
-    setHasSeenTutorial,
   } = useAppStore();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
   const [displayMode, setDisplayMode] = useState<string>('browser');
+  const [showIntro, setShowIntro] = useState(!sessionStorage.getItem('intro_shown'));
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Session timeout (2 jam idle)
+  useIdleTimer();
 
   // Initialize PWA features
   useEffect(() => {
@@ -260,21 +265,6 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Show tutorial if not seen
-  useEffect(() => {
-    if (!hasSeenTutorial && location.pathname === '/') {
-      const timer = setTimeout(() => {
-        setShowTutorial(true);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasSeenTutorial, location.pathname]);
-
-  const handleTutorialClose = useCallback(() => {
-    setShowTutorial(false);
-    setHasSeenTutorial(true);
-  }, [setHasSeenTutorial]);
-
   // Determine if we should show header/bottom nav
   const isCheckout = location.pathname === '/checkout';
   const isProductDetail = location.pathname.startsWith('/product/');
@@ -283,6 +273,12 @@ function App() {
 
   return (
     <ThemeProvider>
+      {/* Intro Splash - sekali per session */}
+      {showIntro && <IntroSplash onComplete={() => setShowIntro(false)} />}
+
+      {/* Welcome Modal - sekali selamanya */}
+      {!showIntro && <WelcomeModal />}
+
       <div className={cn(
         "min-h-screen transition-colors",
         isDarkMode ? "bg-gray-900" : "bg-gray-50"
@@ -290,14 +286,15 @@ function App() {
         {/* Connection Status Bar */}
         <ConnectionStatusBar isDarkMode={isDarkMode} />
 
+        {/* Offline Banner */}
+        <OfflineBanner />
+
         {/* Update Notification */}
         <UpdateNotification isDarkMode={isDarkMode} />
 
-        {/* Welcome Modal */}
-        <WelcomeModal />
+        {/* Brand intro — first visit only, skippable */}
+        {location.pathname === '/' && <BrandIntro />}
 
-        {/* Tutorial Modal */}
-        <TutorialModal isOpen={showTutorial} onClose={handleTutorialClose} />
 
         {/* PWA Install Prompt */}
         <PWAInstallPrompt />
@@ -305,17 +302,8 @@ function App() {
         {/* AI Chatbot */}
         <Chatbot />
 
-        {/* Particle Background */}
-        <Suspense fallback={null}>
-          <ParticleBackground 
-            variant="network" 
-            density="low"
-            isDarkMode={isDarkMode} 
-          />
-        </Suspense>
-
-        {/* Disabled: ClickBurstEffect & CursorTrailEffect cause performance issues with excessive particles.
-             Keep GifParticles component for CelebrationEffect on order success. */}
+        {/* Flash Sale Banner - shows only when active flash sale exists */}
+        <FlashSaleBanner />
 
         {/* Header - Hidden on checkout and product detail */}
         {!hideNav && (
@@ -342,19 +330,21 @@ function App() {
         {/* Main Content with Routes */}
         <main className={cn(
           'min-h-screen',
-          !hideNav && 'pt-14 pb-16',
-          isStandalone && !hideNav && 'pt-safe-top pb-safe-bottom'
+          !hideNav && 'pb-16',
+          isStandalone && !hideNav && 'pb-safe-bottom'
         )}>
           <Suspense fallback={<SectionLoader />}>
             <Routes>
               <Route path="/" element={<HomeSection />} />
-              <Route path="/product/:productId" element={<ProductSection />} />
+              <Route path="/products" element={<ProductSection />} />
+              <Route path="/product/:id" element={<ProductSection />} />
               <Route path="/cart" element={<CartSection />} />
               <Route path="/auth" element={<AuthSection />} />
               <Route path="/support" element={<SupportSection />} />
               <Route path="/profile" element={<ProfileSection />} />
               <Route path="/checkout" element={<CheckoutSection />} />
               <Route path="/search" element={<SearchSection />} />
+              <Route path="/session-expired" element={<SessionExpired />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

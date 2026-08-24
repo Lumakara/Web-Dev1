@@ -116,6 +116,29 @@ export const ROLE_PERMISSIONS: Record<AdminRole, AdminPermission[]> = {
 };
 
 // ============================================
+// ACTION-BASED PERMISSION SYSTEM
+// ============================================
+
+export type AdminAction =
+  | 'view_all'
+  | 'edit_order'
+  | 'crud_product'
+  | 'pricing_rules'
+  | 'user_management'
+  | 'refund'
+  | 'create_admin';
+
+const ACTION_PERMISSIONS: Record<AdminRole, AdminAction[]> = {
+  moderator:   ['view_all'],
+  manager:     ['view_all', 'edit_order', 'refund'],
+  admin:       ['view_all', 'edit_order', 'refund', 'crud_product', 'pricing_rules'],
+  super_admin: ['view_all', 'edit_order', 'refund', 'crud_product', 'pricing_rules', 'user_management', 'create_admin'],
+};
+
+export const hasPermission = (role: AdminRole, action: AdminAction): boolean =>
+  ACTION_PERMISSIONS[role]?.includes(action) ?? false;
+
+// ============================================
 // CONSTANTS
 // ============================================
 
@@ -548,7 +571,7 @@ export function getPermissionsByRole(role: AdminRole): AdminPermission[] {
   return ROLE_PERMISSIONS[role];
 }
 
-export function hasPermission(
+export function checkPermissionByList(
   permissions: AdminPermission[],
   permission: AdminPermission
 ): boolean {

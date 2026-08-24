@@ -871,7 +871,7 @@ function PanelInfoCard({ isDarkMode }: { isDarkMode: boolean }) {
 // =============================================================================
 
 export default function ProductSection() {
-  const { productId } = useParams<{ productId: string }>();
+  const { id: productId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { products, isLoading: isLoadingProducts } = useProducts();
   const { addRecentlyViewed, isDarkMode } = useAppStore();

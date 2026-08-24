@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OrderService } from '@/lib/db';
 import type { Order } from '@/lib/db';
+import { RefundModal } from './components/RefundModal';
 
 const statusOptions = [
   { value: 'pending', label: 'Menunggu', color: 'bg-yellow-100 text-yellow-700' },
@@ -21,6 +22,7 @@ export function AdminOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [refundOrder, setRefundOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -228,10 +230,33 @@ export function AdminOrders() {
                   <p>Ref Pembayaran: {selectedOrder.payment_reference}</p>
                 </div>
               )}
+
+              {/* Refund button — hanya untuk order yang sudah dibayar */}
+              {['paid', 'processing', 'completed'].includes(selectedOrder.status) && (
+                <button
+                  onClick={() => { setSelectedOrder(null); setRefundOrder(selectedOrder); }}
+                  className="w-full mt-2 py-2 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  Proses Refund
+                </button>
+              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Refund Modal */}
+      {refundOrder && (
+        <RefundModal
+          order={refundOrder}
+          onConfirm={async (_reason) => {
+            await OrderService.updateStatus(refundOrder.id, 'cancelled');
+            setOrders(orders.map(o => o.id === refundOrder.id ? { ...o, status: 'cancelled' } : o));
+            setRefundOrder(null);
+          }}
+          onClose={() => setRefundOrder(null)}
+        />
+      )}
     </div>
   );
 }

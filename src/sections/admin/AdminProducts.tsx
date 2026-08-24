@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useProducts } from '@/hooks/useProducts';
+import { ImageUploader } from '@/components/ImageUploader';
 import type { Product, Tier } from '@/lib/db';
 
 const categories = [
@@ -200,6 +201,27 @@ export function AdminProducts() {
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label>Gambar Produk</Label>
+              <div className="flex items-center gap-3">
+                <ImageUploader
+                  bucket="products"
+                  path={`product-${editingProduct?.id || 'new'}-${Date.now()}`}
+                  currentUrl={formData.icon}
+                  onUpload={(url) => setFormData({ ...formData, icon: url, image: url })}
+                />
+                <div className="flex-1">
+                  <Input
+                    value={formData.icon}
+                    onChange={(e) => setFormData({ ...formData, icon: e.target.value, image: e.target.value })}
+                    placeholder="atau paste URL gambar..."
+                    className="text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Nama Produk</Label>
               <Input

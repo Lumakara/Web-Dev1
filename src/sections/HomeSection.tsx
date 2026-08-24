@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Star, ChevronLeft, ChevronRight, 
   Sparkles, Zap, Headphones, Palette, Code, Wrench, Shield,
-  X
+  X, Heart
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 import { useProducts } from '@/hooks/useProducts';
 import { useAppStore } from '@/store/appStore';
+import { useWishlist } from '@/hooks/useWishlist';
 import { audioService } from '@/lib/audio';
 import type { Product } from '@/lib/db';
 
@@ -52,6 +53,7 @@ interface ProductCardProps {
 const ProductCard = memo(function ProductCard({ product, avgPrice }: ProductCardProps) {
   const navigate = useNavigate();
   const { cart } = useAppStore();
+  const { favorites, toggle } = useWishlist();
   
   const price = product.discount_price || product.base_price;
   const hasDiscount = product.discount_price && product.discount_price < product.base_price;
@@ -61,11 +63,17 @@ const ProductCard = memo(function ProductCard({ product, avgPrice }: ProductCard
   
   const label = useMemo(() => getProductLabel(product, avgPrice), [product, avgPrice]);
   const cartItem = useMemo(() => cart.find(item => item.productId === product.id), [cart, product.id]);
+  const isFav = favorites.includes(product.id);
 
   const handleClick = useCallback(() => {
     audioService.playClick();
     navigate(`/product/${product.id}`);
   }, [navigate, product.id]);
+
+  const handleWishlist = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggle(product.id);
+  }, [toggle, product.id]);
 
   return (
     <div
@@ -79,6 +87,14 @@ const ProductCard = memo(function ProductCard({ product, avgPrice }: ProductCard
           className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
         />
+        {/* Wishlist button */}
+        <button
+          onClick={handleWishlist}
+          className="absolute top-2 right-2 p-1.5 rounded-full bg-background/80 backdrop-blur-sm hover:scale-110 transition-transform z-10"
+          aria-label={isFav ? 'Hapus dari wishlist' : 'Tambah ke wishlist'}
+        >
+          <Heart className={`h-4 w-4 ${isFav ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`} />
+        </button>
         {label && (
           <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-accent text-primary shadow-xs">
             {label.label}
@@ -132,13 +148,18 @@ const slides = [
 
 const HeroBanner = memo(function HeroBanner() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+  // Autonomy: once the user picks a slide, stop rotating. Reduced-motion users
+  // never get auto-rotation at all.
+  const [userTook, setUserTook] = useState(false);
+
   useEffect(() => {
+    if (userTook) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
     const interval = setInterval(() => {
       setCurrentSlide(prev => (prev + 1) % slides.length);
-    }, 4000);
+    }, 6000);
     return () => clearInterval(interval);
-  }, []);
+  }, [userTook]);
 
   return (
     <div className="relative h-44 overflow-hidden bg-primary text-primary-foreground border-b border-border shadow-soft">
@@ -166,7 +187,9 @@ const HeroBanner = memo(function HeroBanner() {
         {slides.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentSlide(index)}
+            onClick={() => { setUserTook(true); setCurrentSlide(index); }}
+            aria-label={`Slide ${index + 1}`}
+            aria-current={currentSlide === index}
             className={`h-1.5 rounded-full transition-all ${
               currentSlide === index ? 'bg-accent w-5' : 'bg-primary-foreground/40 w-1.5'
             }`}
@@ -252,7 +275,7 @@ export default function HomeSection() {
       {showHero && <HeroBanner />}
 
       {/* Search & Filter Bar */}
-      <div className="sticky top-[56px] z-30 px-4 py-3 bg-card border-b border-border shadow-soft">
+      <div className="sticky top-0 z-30 px-4 py-3 bg-card border-b border-border shadow-soft">
         <div className="max-w-5xl mx-auto">
           {/* Search Trigger — opens UltraSearch modal */}
           <button

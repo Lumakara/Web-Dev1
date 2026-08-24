@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { copyFileSync } from 'node:fs';
+import { VitePWA } from 'vite-plugin-pwa';
 
 function spaFallbackPlugin() {
   return {
@@ -20,6 +21,44 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       spaFallbackPlugin(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+        manifest: {
+          name: 'Lumakara Store',
+          short_name: 'Lumakara',
+          description: 'Platform jasa digital profesional',
+          theme_color: '#112250',
+          background_color: '#0f0f0f',
+          display: 'standalone',
+          start_url: '/',
+          icons: [
+            { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+          ],
+        },
+        workbox: {
+          // Cache produk dari Supabase (offline browse)
+          runtimeCaching: [
+            {
+              urlPattern: /^https:\/\/txujwsolndskreywxqtq\.supabase\.co\/rest\/v1\/products/,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'products-cache',
+                expiration: { maxEntries: 500, maxAgeSeconds: 3600 },
+              },
+            },
+            {
+              urlPattern: /\.(png|jpg|jpeg|webp|svg)$/,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'images-cache',
+                expiration: { maxEntries: 100, maxAgeSeconds: 86400 },
+              },
+            },
+          ],
+        },
+      }),
     ],
     resolve: {
       alias: {

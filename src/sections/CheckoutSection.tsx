@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import QRCode from 'qrcode';
-import { ArrowLeft, Check, Clock, ExternalLink, Loader2, QrCode } from 'lucide-react';
+import { ArrowLeft, Clock, ExternalLink, Loader2, QrCode } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -135,13 +135,102 @@ export function CheckoutSection() {
     }
   };
 
-  if (step === 'success') return <main className="min-h-screen bg-background px-4 py-10">
-    <Card className="mx-auto max-w-md"><CardContent className="space-y-5 p-8 text-center">
-      <Check className="mx-auto h-14 w-14 text-green-600" /><h1 className="text-2xl font-bold">Pembayaran berhasil</h1>
-      <p className="text-muted-foreground">Pesanan Anda telah diterima dan akan diproses.</p>
-      <Button asChild className="w-full"><Link to="/">Kembali ke beranda</Link></Button>
-    </CardContent></Card>
-  </main>;
+  if (step === 'success') return (
+    <main className="min-h-screen bg-background flex items-center justify-center px-4 py-10 overflow-hidden">
+      {/* Confetti particles */}
+      <div className="fixed inset-0 pointer-events-none" aria-hidden>
+        {Array.from({ length: 24 }).map((_, i) => (
+          <div
+            key={i}
+            className="absolute w-2 h-2 rounded-sm opacity-0 animate-confetti"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `-${Math.random() * 20}px`,
+              background: ['#818cf8','#34d399','#fbbf24','#f472b6','#60a5fa'][i % 5],
+              animationDelay: `${Math.random() * 0.8}s`,
+              animationDuration: `${1.5 + Math.random()}s`,
+              transform: `rotate(${Math.random() * 360}deg)`,
+            }}
+          />
+        ))}
+      </div>
+
+      <Card className="mx-auto max-w-md w-full shadow-2xl border-border/50">
+        <CardContent className="space-y-6 p-8 text-center">
+          {/* Animated checkmark */}
+          <div className="relative mx-auto w-20 h-20">
+            <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center animate-scale-in">
+              <svg viewBox="0 0 52 52" className="w-10 h-10">
+                <circle cx="26" cy="26" r="25" fill="none" stroke="rgb(34 197 94)" strokeWidth="2" className="animate-circle-draw" />
+                <path fill="none" stroke="rgb(34 197 94)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+                  d="M14.1 27.2l7.1 7.2 16.7-16.8" className="animate-check-draw" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="space-y-2 animate-fade-up" style={{ animationDelay: '0.5s' }}>
+            <h1 className="text-2xl font-bold">Pembayaran Berhasil! 🎉</h1>
+            <p className="text-muted-foreground">Pesananmu sudah kami terima dan sedang diproses.</p>
+          </div>
+
+          {payment && (
+            <div className="bg-muted/40 rounded-xl p-4 text-left space-y-2 animate-fade-up" style={{ animationDelay: '0.7s' }}>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total dibayar</span>
+                <span className="font-bold">{formatPrice(payment.amount + (payment.fee || 0))}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Metode</span>
+                <span>QRIS</span>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2 animate-fade-up" style={{ animationDelay: '0.9s' }}>
+            <Button asChild className="w-full">
+              <Link to="/profile">Lihat Pesanan →</Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/">Lanjut Belanja</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <style>{`
+        @keyframes confetti-fall {
+          0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        .animate-confetti { animation: confetti-fall linear forwards; }
+
+        @keyframes scale-in {
+          0% { transform: scale(0); opacity: 0; }
+          60% { transform: scale(1.15); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-in { animation: scale-in 0.5s cubic-bezier(0.175,0.885,0.32,1.275) forwards; }
+
+        @keyframes circle-draw {
+          0% { stroke-dasharray: 0 157; }
+          100% { stroke-dasharray: 157 0; }
+        }
+        .animate-circle-draw { stroke-dasharray: 0 157; animation: circle-draw 0.6s ease forwards 0.2s; }
+
+        @keyframes check-draw {
+          0% { stroke-dasharray: 0 50; }
+          100% { stroke-dasharray: 50 0; }
+        }
+        .animate-check-draw { stroke-dasharray: 0 50; animation: check-draw 0.4s ease forwards 0.7s; }
+
+        @keyframes fade-up {
+          0% { opacity: 0; transform: translateY(12px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { opacity: 0; animation: fade-up 0.4s ease forwards; }
+      `}</style>
+    </main>
+  );
 
   if (step === 'payment' && payment) {
     return <main className="min-h-screen bg-background px-4 py-8"><div className="mx-auto max-w-md space-y-4">

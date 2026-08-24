@@ -6,29 +6,6 @@
 /* ============================================
    FLOATING ANIMATION
    ============================================ */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-10px) rotate(1deg);
-  }
-  50% {
-    transform: translateY(-5px) rotate(0deg);
-  }
-  75% {
-    transform: translateY(-15px) rotate(-1deg);
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-float-delayed {
-  animation: float 6s ease-in-out infinite;
-  animation-delay: -3s;
-}
 
 /* ============================================
    PULSE SCALE
@@ -520,3 +497,89 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* ============================================
+   KONFETTI / SUCCESS ANIMATIONS (checkout)
+   ============================================ */
+@keyframes konfetti-fall {
+  0% {
+    transform: translateY(-120px) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  80% { opacity: 1; }
+  100% {
+    transform: translateY(100vh) rotate(720deg) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes checkmark-draw {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  30% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+
+@keyframes success-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes slide-up-fade {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.konfetti-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  animation: konfetti-fall linear forwards;
+  border-radius: 2px;
+}
+
+.success-checkmark {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: checkmark-draw 0.6s ease forwards 0.2s;
+}
+
+.success-pop {
+  animation: success-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.slide-up-fade {
+  animation: slide-up-fade 0.4s ease forwards;
+}
+
+.slide-up-fade-1 { animation-delay: 0.1s; opacity: 0; }
+.slide-up-fade-2 { animation-delay: 0.2s; opacity: 0; }
+.slide-up-fade-3 { animation-delay: 0.3s; opacity: 0; }
+
+/* Flash sale countdown flip */
+@keyframes flip-number {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.flip-number {
+  animation: flip-number 0.3s ease-in-out;
+}
+
+/* Social proof pulse */
+@keyframes viewer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.viewer-pulse {
+  animation: viewer-pulse 2s ease-in-out infinite;
+}
+

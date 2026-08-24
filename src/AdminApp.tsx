@@ -696,12 +696,11 @@ function ProductsContent({ isDarkMode }: { isDarkMode: boolean }) {
     related: [],
   });
 
-  // Check permissions
-  // This legacy content component is not used by the active products route.
-  // Keep its mutations disabled instead of reconstructing authority client-side.
-  const canCreate = false;
-  const canEdit = false;
-  const canDelete = false;
+  // Check permissions based on admin role
+  // moderator: view only | manager: view+order | admin/super_admin: full CRUD
+  const canCreate = admin ? (admin.role === 'admin' || admin.role === 'super_admin' || admin.role === 'manager') : false;
+  const canEdit = admin ? admin.role !== 'moderator' : false;
+  const canDelete = admin ? (admin.role === 'admin' || admin.role === 'super_admin') : false;
 
   // Load products from Supabase.
   useEffect(() => {

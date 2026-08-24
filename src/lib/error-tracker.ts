@@ -281,6 +281,9 @@ declare global {
 }
 
 export const initTestFunctions = () => {
+  // Guard: only expose debug APIs in development builds
+  if (!import.meta.env.DEV) return;
+
   window.__testJSError = () => {
     throw new Error('🧪 TEST: JavaScript runtime error');
   };

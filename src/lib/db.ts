@@ -18,9 +18,14 @@ export const ProductService = {
     
     if (error) throw error;
     
-    // Transform tiers from separate table to nested array
+    // Transform tiers from separate table to nested array.
+    // icon/image fall back to the brand mark: an empty src makes the browser
+    // re-request the page (React warns about it) and every consumer renders
+    // <img src={product.icon}> directly.
     return (data || []).map(p => ({
       ...p,
+      icon: p.icon || '/favicon.svg',
+      image: p.image || '/favicon.svg',
       tiers: p.product_tiers || [],
       product_tiers: undefined,
     })) as Product[];
@@ -40,6 +45,8 @@ export const ProductService = {
     
     return {
       ...data,
+      icon: data.icon || '/favicon.svg',
+      image: data.image || '/favicon.svg',
       tiers: data.product_tiers || [],
       product_tiers: undefined,
     } as Product;

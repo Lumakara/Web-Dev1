@@ -2,11 +2,13 @@ import { ProductService, type Product } from './db';
 
 // ==================== KIMI AI CONFIGURATION ====================
 
-const KIMI_API_KEY = import.meta.env.VITE_KIMI_API_KEY;
-const KIMI_API_URL = import.meta.env.VITE_KIMI_API_URL || 'https://api.moonshot.cn/v1/chat/completions';
-const KIMI_MODEL = import.meta.env.VITE_KIMI_MODEL || 'moonshot-v1-8k';
+// KIMI API key is now server-side only — routed through ai-proxy Edge Function
+// VITE_KIMI_API_KEY removed from frontend bundle for security
+const KIMI_API_URL = '/functions/v1/ai-proxy';
+const KIMI_MODEL = 'moonshot-v1-8k'; // informational only
+const KIMI_API_KEY = ''; // unused — key is server-side
 
-const HAS_KIMI_API_KEY = Boolean(KIMI_API_KEY && KIMI_API_KEY !== 'your-kimi-api-key');
+const HAS_KIMI_API_KEY = true; // always true — key lives in Edge Function
 
 // ==================== TYPES ====================
 
@@ -162,14 +164,11 @@ export async function sendMessage(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${KIMI_API_KEY}`,
+        // No Authorization header — key is server-side in ai-proxy Edge Function
       },
       body: JSON.stringify({
-        model: KIMI_MODEL,
         messages,
-        temperature: 0.7,
         max_tokens: 1500,
-        stream: false,
       }),
       signal: controller.signal,
     });

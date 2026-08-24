@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, X, History, TrendingUp, SlidersHorizontal,
   ArrowLeft, Star, Loader2, Sparkles, Zap,
-  Wrench, Palette, Code, ArrowRight
+  Wrench, Palette, Code, ArrowRight, Check
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -48,17 +48,268 @@ function HighlightText({ text, query }: { text: string; query: string }) {
   );
 }
 
-const HISTORY_KEY = 'search_history'; // same key as UltraSearch
+const HISTORY_KEY = 'search_history';
 const POPULAR_TERMS = ['WiFi Installation', 'CCTV Security', 'VPS Hosting', 'Video Editing'];
 const CATEGORIES = [
-  { id: 'all', label: 'Semua', icon: Sparkles },
   { id: 'installation', label: 'Instalasi', icon: Wrench },
   { id: 'creative', label: 'Kreatif', icon: Palette },
   { id: 'technical', label: 'Teknis', icon: Code },
 ] as const;
 
+const PRICE_RANGES = [
+  { id: 'all', label: 'Semua Harga' },
+  { id: '0-50', label: 'Di bawah Rp 50rb' },
+  { id: '50-150', label: 'Rp 50rb – 150rb' },
+  { id: '150-500', label: 'Rp 150rb – 500rb' },
+  { id: '500-plus', label: 'Di atas Rp 500rb' },
+] as const;
+
+const SORT_OPTIONS = [
+  { id: 'relevance', label: 'Relevansi' },
+  { id: 'price_asc', label: 'Harga: Murah ke Mahal' },
+  { id: 'price_desc', label: 'Harga: Mahal ke Murah' },
+  { id: 'rating', label: 'Rating Tertinggi' },
+] as const;
+
+type SortBy = 'relevance' | 'price_asc' | 'price_desc' | 'rating';
+
+interface Filters {
+  categories: string[];   // multi-select: [], ['installation'], ['installation','creative'], etc.
+  priceRange: string;     // single: 'all' | '0-50' | ...
+  minRating: number;      // 0 | 4.5 | 4.7 | 4.9
+  sortBy: SortBy;
+}
+
+const DEFAULT_FILTERS: Filters = {
+  categories: [],
+  priceRange: 'all',
+  minRating: 0,
+  sortBy: 'relevance',
+};
+
+function countActiveFilters(f: Filters): number {
+  return [
+    f.categories.length > 0,
+    f.priceRange !== 'all',
+    f.minRating > 0,
+    f.sortBy !== 'relevance',
+  ].filter(Boolean).length;
+}
+
 function formatPrice(price: number) {
   return `Rp ${price.toLocaleString('id-ID')}`;
+}
+
+// ============================================================
+// FILTER SHEET — bottom sheet (mobile) + centered modal (desktop)
+// ============================================================
+
+interface FilterSheetProps {
+  open: boolean;
+  onClose: () => void;
+  draft: Filters;
+  setDraft: (f: Filters) => void;
+  onApply: () => void;
+  onReset: () => void;
+}
+
+function FilterSheet({ open, onClose, draft, setDraft, onApply, onReset }: FilterSheetProps) {
+  const activeCount = countActiveFilters(draft);
+
+  // Trap focus and Escape key
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const toggleCategory = (id: string) => {
+    const next = draft.categories.includes(id)
+      ? draft.categories.filter(c => c !== id)
+      : [...draft.categories, id];
+    setDraft({ ...draft, categories: next });
+  };
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Sheet — bottom on mobile, centered on sm+ */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Filter pencarian"
+        className={cn(
+          "fixed z-[61] bg-card border border-border shadow-soft-lg flex flex-col",
+          // Mobile: bottom sheet, max 85% viewport height
+          "inset-x-0 bottom-0 rounded-t-2xl max-h-[85dvh]",
+          // Desktop: centered modal
+          "sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2",
+          "sm:w-full sm:max-w-md sm:rounded-2xl sm:max-h-[90dvh]"
+        )}
+      >
+        {/* Handle bar (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-border" />
+        </div>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <div>
+            <h2 className="font-semibold text-base text-foreground">Filter</h2>
+            {activeCount > 0 && (
+              <p className="text-xs text-muted-foreground">{activeCount} filter aktif</p>
+            )}
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Tutup filter"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-6">
+
+          {/* Kategori — multi-select pill */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Kategori</h3>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map(cat => {
+                const Icon = cat.icon;
+                const active = draft.categories.includes(cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => toggleCategory(cat.id)}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-secondary border-border hover:border-primary hover:text-primary"
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {cat.label}
+                    {active && <Check className="h-3.5 w-3.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Harga — single select */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Kisaran Harga</h3>
+            <div className="space-y-1.5">
+              {PRICE_RANGES.map(range => {
+                const active = draft.priceRange === range.id;
+                return (
+                  <button
+                    key={range.id}
+                    onClick={() => setDraft({ ...draft, priceRange: range.id })}
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm border transition-all text-left",
+                      active
+                        ? "bg-primary/10 border-primary text-primary font-medium"
+                        : "bg-background border-border text-secondary hover:border-primary hover:bg-muted"
+                    )}
+                  >
+                    {range.label}
+                    {active && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Rating minimum — single select */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Rating Minimum</h3>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 0, label: 'Semua' },
+                { value: 4.5, label: '4.5+ ★' },
+                { value: 4.7, label: '4.7+ ★' },
+                { value: 4.9, label: '4.9+ ★' },
+              ].map(opt => {
+                const active = draft.minRating === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setDraft({ ...draft, minRating: opt.value })}
+                    className={cn(
+                      "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all",
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-secondary border-border hover:border-primary hover:text-primary"
+                    )}
+                  >
+                    {opt.label}
+                    {active && <Check className="h-3.5 w-3.5" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Urutan — single select */}
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Urutkan</h3>
+            <div className="space-y-1.5">
+              {SORT_OPTIONS.map(opt => {
+                const active = draft.sortBy === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setDraft({ ...draft, sortBy: opt.id as SortBy })}
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm border transition-all text-left",
+                      active
+                        ? "bg-primary/10 border-primary text-primary font-medium"
+                        : "bg-background border-border text-secondary hover:border-primary hover:bg-muted"
+                    )}
+                  >
+                    {opt.label}
+                    {active && <Check className="h-4 w-4 text-primary shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Padding bawah agar tidak tertutup sticky footer */}
+          <div className="h-2" />
+        </div>
+
+        {/* Sticky footer */}
+        <div className="border-t border-border bg-card px-5 py-4 flex gap-3">
+          <button
+            onClick={onReset}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold border border-border text-secondary hover:bg-muted transition-colors"
+          >
+            Atur Ulang
+          </button>
+          <button
+            onClick={onApply}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:bg-secondary transition-colors"
+          >
+            Terapkan{activeCount > 0 ? ` (${activeCount})` : ''}
+          </button>
+        </div>
+      </div>
+    </>
+  );
 }
 
 // ============================================================
@@ -69,24 +320,21 @@ export default function SearchSection() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Restore query from URL on mount for back-navigation persistence
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    category: 'all',
-    priceRange: 'all',
-    minRating: 0,
-    sortBy: 'relevance' as 'relevance' | 'price_asc' | 'price_desc' | 'rating',
-  });
+
+  // Applied filters (drive results)
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  // Draft filters (in-modal, not applied until user taps Terapkan)
+  const [draftFilters, setDraftFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load products once on mount
   useEffect(() => {
     setIsLoading(true);
     setLoadError(null);
@@ -103,11 +351,10 @@ export default function SearchSection() {
       if (saved) setSearchHistory(JSON.parse(saved));
     } catch { /* ignore */ }
 
-    // Focus input on desktop
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
 
-  // Sync query to URL — so back navigation restores state
+  // Sync query to URL
   useEffect(() => {
     const current = searchParams.get('q') ?? '';
     if (query !== current) {
@@ -115,6 +362,24 @@ export default function SearchSection() {
       else setSearchParams({}, { replace: true });
     }
   }, [query, searchParams, setSearchParams]);
+
+  const openFilterSheet = useCallback(() => {
+    setDraftFilters(filters); // sync draft to current applied
+    setShowFilterSheet(true);
+    audioService.playClick();
+  }, [filters]);
+
+  const closeFilterSheet = useCallback(() => setShowFilterSheet(false), []);
+
+  const applyFilters = useCallback(() => {
+    setFilters(draftFilters);
+    setShowFilterSheet(false);
+    audioService.playClick();
+  }, [draftFilters]);
+
+  const resetDraft = useCallback(() => {
+    setDraftFilters(DEFAULT_FILTERS);
+  }, []);
 
   const addToHistory = useCallback((term: string) => {
     const t = term.trim();
@@ -163,8 +428,8 @@ export default function SearchSection() {
         }
       });
 
-      // Category filter
-      if (filters.category !== 'all' && product.category !== filters.category) return;
+      // Category filter (multi-select: empty = all)
+      if (filters.categories.length > 0 && !filters.categories.includes(product.category)) return;
       // Rating filter
       if (filters.minRating > 0 && product.rating < filters.minRating) return;
       // Price filter
@@ -188,13 +453,12 @@ export default function SearchSection() {
         return Math.min(...b.product.tiers.map(t => t.price)) - Math.min(...a.product.tiers.map(t => t.price));
       }
       if (filters.sortBy === 'rating') return b.product.rating - a.product.rating;
-      return b.score - a.score; // relevance
+      return b.score - a.score;
     });
 
     return results.slice(0, 20);
   }, [query, products, filters]);
 
-  // Popular products for empty state (top rated)
   const popularProducts = useMemo(() =>
     [...products].sort((a, b) => b.rating - a.rating).slice(0, 4),
     [products]
@@ -203,6 +467,7 @@ export default function SearchSection() {
   // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (showFilterSheet) return; // let sheet handle Escape
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex(i => Math.min(i + 1, searchResults.length - 1));
@@ -220,9 +485,8 @@ export default function SearchSection() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [searchResults, selectedIndex, query, navigate]);
+  }, [searchResults, selectedIndex, query, navigate, showFilterSheet]);
 
-  // Reset selectedIndex when results change
   useEffect(() => setSelectedIndex(0), [query, filters]);
 
   const handleSelect = useCallback((product: Product) => {
@@ -231,22 +495,15 @@ export default function SearchSection() {
     navigate(`/product/${product.id}`);
   }, [query, navigate, addToHistory]);
 
-  const handleQueryChange = useCallback((val: string) => {
-    setQuery(val);
-  }, []);
+  const handleQueryChange = useCallback((val: string) => setQuery(val), []);
 
   const showEmptyState = !query.trim();
-  const activeFiltersCount = [
-    filters.category !== 'all',
-    filters.priceRange !== 'all',
-    filters.minRating > 0,
-    filters.sortBy !== 'relevance',
-  ].filter(Boolean).length;
+  const activeFiltersCount = countActiveFilters(filters);
 
   return (
     <div className="pb-20 min-h-screen bg-background text-foreground">
       {/* Header */}
-      <div className="sticky top-[56px] z-30 bg-card border-b border-border shadow-soft">
+      <div className="sticky top-0 z-30 bg-card border-b border-border shadow-soft">
         <div className="max-w-2xl mx-auto px-4 py-3">
           {/* Search bar row */}
           <div className="flex items-center gap-2">
@@ -280,14 +537,14 @@ export default function SearchSection() {
               )}
             </div>
 
-            {/* Filter toggle */}
+            {/* Filter button */}
             <button
-              onClick={() => { setShowFilters(!showFilters); audioService.playClick(); }}
+              onClick={openFilterSheet}
               className={cn(
-                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border border-border transition-colors",
-                showFilters || activeFiltersCount > 0
+                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm border transition-colors",
+                activeFiltersCount > 0
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-secondary hover:bg-muted"
+                  : "bg-background text-secondary border-border hover:bg-muted"
               )}
               aria-label="Filter"
             >
@@ -298,61 +555,59 @@ export default function SearchSection() {
             </button>
           </div>
 
-          {/* Filters panel */}
-          {showFilters && (
-            <div className="mt-3 p-3 rounded-xl flex flex-wrap gap-2 bg-background border border-border">
-              <select
-                value={filters.category}
-                onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
-                className="px-3 py-1.5 rounded-lg text-sm bg-card text-foreground border border-border"
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c.id} value={c.id}>{c.label}</option>
-                ))}
-              </select>
-
-              <select
-                value={filters.priceRange}
-                onChange={e => setFilters(f => ({ ...f, priceRange: e.target.value }))}
-                className="px-3 py-1.5 rounded-lg text-sm bg-card text-foreground border border-border"
-              >
-                <option value="all">Semua Harga</option>
-                <option value="0-50">Di bawah Rp 50rb</option>
-                <option value="50-100">Rp 50rb – 100rb</option>
-                <option value="100-500">Rp 100rb – 500rb</option>
-                <option value="500-plus">Di atas Rp 500rb</option>
-              </select>
-
-              <select
-                value={filters.minRating}
-                onChange={e => setFilters(f => ({ ...f, minRating: Number(e.target.value) }))}
-                className="px-3 py-1.5 rounded-lg text-sm bg-card text-foreground border border-border"
-              >
-                <option value={0}>Semua Rating</option>
-                <option value={4}>4+ Bintang</option>
-                <option value={4.5}>4.5+ Bintang</option>
-                <option value={4.8}>4.8+ Bintang</option>
-              </select>
-
-              <select
-                value={filters.sortBy}
-                onChange={e => setFilters(f => ({ ...f, sortBy: e.target.value as typeof filters.sortBy }))}
-                className="px-3 py-1.5 rounded-lg text-sm bg-card text-foreground border border-border"
-              >
-                <option value="relevance">Relevansi</option>
-                <option value="price_asc">Harga ↑</option>
-                <option value="price_desc">Harga ↓</option>
-                <option value="rating">Rating</option>
-              </select>
-
-              {activeFiltersCount > 0 && (
-                <button
-                  onClick={() => setFilters({ category: 'all', priceRange: 'all', minRating: 0, sortBy: 'relevance' })}
-                  className="px-3 py-1.5 rounded-lg text-sm text-destructive border border-destructive/30 hover:bg-destructive/10 transition-colors"
+          {/* Active filter chips */}
+          {activeFiltersCount > 0 && (
+            <div className="flex items-center gap-2 mt-2 overflow-x-auto scrollbar-hide">
+              {filters.categories.map(catId => {
+                const cat = CATEGORIES.find(c => c.id === catId);
+                return cat ? (
+                  <Badge
+                    key={catId}
+                    variant="secondary"
+                    className="shrink-0 flex items-center gap-1 bg-primary/10 text-primary border-primary/20 cursor-pointer"
+                    onClick={() => setFilters(f => ({ ...f, categories: f.categories.filter(c => c !== catId) }))}
+                  >
+                    {cat.label}
+                    <X className="h-3 w-3" />
+                  </Badge>
+                ) : null;
+              })}
+              {filters.priceRange !== 'all' && (
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 flex items-center gap-1 bg-primary/10 text-primary border-primary/20 cursor-pointer"
+                  onClick={() => setFilters(f => ({ ...f, priceRange: 'all' }))}
                 >
-                  Reset
-                </button>
+                  {PRICE_RANGES.find(p => p.id === filters.priceRange)?.label}
+                  <X className="h-3 w-3" />
+                </Badge>
               )}
+              {filters.minRating > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 flex items-center gap-1 bg-primary/10 text-primary border-primary/20 cursor-pointer"
+                  onClick={() => setFilters(f => ({ ...f, minRating: 0 }))}
+                >
+                  {filters.minRating}+ ★
+                  <X className="h-3 w-3" />
+                </Badge>
+              )}
+              {filters.sortBy !== 'relevance' && (
+                <Badge
+                  variant="secondary"
+                  className="shrink-0 flex items-center gap-1 bg-primary/10 text-primary border-primary/20 cursor-pointer"
+                  onClick={() => setFilters(f => ({ ...f, sortBy: 'relevance' }))}
+                >
+                  {SORT_OPTIONS.find(s => s.id === filters.sortBy)?.label}
+                  <X className="h-3 w-3" />
+                </Badge>
+              )}
+              <button
+                onClick={() => setFilters(DEFAULT_FILTERS)}
+                className="shrink-0 text-xs text-destructive hover:underline whitespace-nowrap"
+              >
+                Hapus semua
+              </button>
             </div>
           )}
 
@@ -386,7 +641,6 @@ export default function SearchSection() {
             </button>
           </div>
         ) : showEmptyState ? (
-          /* Empty state: recent searches + popular */
           <div className="space-y-6">
             {searchHistory.length > 0 && (
               <section>
@@ -431,19 +685,23 @@ export default function SearchSection() {
               </div>
             </section>
 
-            {/* Kategori */}
             <section>
               <h2 className="text-sm font-semibold mb-3 text-primary">Kategori</h2>
-              <div className="grid grid-cols-2 gap-2">
-                {CATEGORIES.filter(c => c.id !== 'all').map(cat => {
+              <div className="grid grid-cols-3 gap-2">
+                {CATEGORIES.map(cat => {
                   const Icon = cat.icon;
                   return (
                     <button
                       key={cat.id}
-                      onClick={() => { setFilters(f => ({ ...f, category: cat.id })); setShowFilters(true); audioService.playClick(); }}
-                      className="flex items-center gap-2 p-3 rounded-xl border border-border bg-card hover:border-primary hover:bg-muted transition-colors text-sm font-medium text-secondary"
+                      onClick={() => {
+                        const next = { ...DEFAULT_FILTERS, categories: [cat.id] };
+                        setFilters(next);
+                        setDraftFilters(next);
+                        audioService.playClick();
+                      }}
+                      className="flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border bg-card hover:border-primary hover:bg-muted transition-colors text-sm font-medium text-secondary"
                     >
-                      <Icon className="h-4 w-4 text-primary" />
+                      <Icon className="h-5 w-5 text-primary" />
                       {cat.label}
                     </button>
                   );
@@ -451,7 +709,6 @@ export default function SearchSection() {
               </div>
             </section>
 
-            {/* Popular products */}
             {popularProducts.length > 0 && (
               <section>
                 <h2 className="text-sm font-semibold flex items-center gap-2 mb-3 text-primary">
@@ -473,7 +730,6 @@ export default function SearchSection() {
             )}
           </div>
         ) : searchResults.length > 0 ? (
-          /* Search results */
           <div className="space-y-2">
             {searchResults.map(({ product, matchedFields }, index) => (
               <ProductRow
@@ -488,14 +744,13 @@ export default function SearchSection() {
             ))}
           </div>
         ) : (
-          /* No results */
           <div className="text-center py-20">
             <Zap className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-40" />
             <p className="text-primary font-semibold">Tidak ada hasil untuk "{query}"</p>
             <p className="text-sm text-muted-foreground mt-1">Coba kata kunci lain atau hapus filter</p>
             {activeFiltersCount > 0 && (
               <button
-                onClick={() => setFilters({ category: 'all', priceRange: 'all', minRating: 0, sortBy: 'relevance' })}
+                onClick={() => setFilters(DEFAULT_FILTERS)}
                 className="mt-4 px-4 py-2 rounded-lg text-sm border border-border hover:bg-muted transition-colors"
               >
                 Hapus Filter
@@ -504,12 +759,22 @@ export default function SearchSection() {
           </div>
         )}
       </div>
+
+      {/* Filter Sheet */}
+      <FilterSheet
+        open={showFilterSheet}
+        onClose={closeFilterSheet}
+        draft={draftFilters}
+        setDraft={setDraftFilters}
+        onApply={applyFilters}
+        onReset={resetDraft}
+      />
     </div>
   );
 }
 
 // ============================================================
-// PRODUCT ROW — reusable result item
+// PRODUCT ROW
 // ============================================================
 
 interface ProductRowProps {
