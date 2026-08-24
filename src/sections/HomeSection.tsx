@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Star, ChevronLeft, ChevronRight, 
   Sparkles, Zap, Headphones, Palette, Code, Wrench, Shield,
-  X, Heart
+  X, Heart, Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useProducts } from '@/hooks/useProducts';
 import { useAppStore } from '@/store/appStore';
 import { useWishlist } from '@/hooks/useWishlist';
+import { useViewerCount } from '@/hooks/useViewerCount';
 import { audioService } from '@/lib/audio';
 import type { Product } from '@/lib/db';
 
@@ -54,6 +55,7 @@ const ProductCard = memo(function ProductCard({ product, avgPrice }: ProductCard
   const navigate = useNavigate();
   const { cart } = useAppStore();
   const { favorites, toggle } = useWishlist();
+  const viewerCount = useViewerCount(product.id);
   
   const price = product.discount_price || product.base_price;
   const hasDiscount = product.discount_price && product.discount_price < product.base_price;
@@ -130,6 +132,12 @@ const ProductCard = memo(function ProductCard({ product, avgPrice }: ProductCard
             <span>{product.rating}</span>
           </div>
         </div>
+        {viewerCount > 1 && (
+          <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground">
+            <Eye className="h-3 w-3" />
+            <span>{viewerCount} orang sedang melihat</span>
+          </div>
+        )}
       </div>
     </div>
   );
